@@ -23,6 +23,7 @@ export class MapScene extends Phaser.Scene {
   private remainingMoves = MOVEMENT_PER_TURN;
   private isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
+  private endTurnBtn!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super("MapScene");
@@ -80,6 +81,38 @@ export class MapScene extends Phaser.Scene {
       })
       .setOrigin(1, 0)
       .setDepth(20);
+
+    // Button anchored top-right: setOrigin(1,0) so x=1260 is the right edge, y=50 is the top.
+    this.endTurnBtn = this.add
+      .rectangle(1280 - 20, 50, 120, 36, DEFAULT_FILL)
+      .setStrokeStyle(2, 0xffcc44)
+      .setOrigin(1, 0)
+      .setDepth(20)
+      .setInteractive();
+
+    // Text centered inside the rectangle: x = right_edge - half_width, y = top + half_height
+    this.add
+      .text(1280 - 20 - 60, 50 + 18, "End Turn", {
+        fontSize: "18px",
+        color: "#ffcc44",
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(21);
+
+    this.endTurnBtn.on("pointerover", () => {
+      if (!this.isAnimating) this.endTurnBtn.setFillStyle(HOVER_FILL);
+    });
+    this.endTurnBtn.on("pointerout", () => {
+      this.endTurnBtn.setFillStyle(DEFAULT_FILL);
+    });
+    this.endTurnBtn.on("pointerdown", () => {
+      if (!this.isAnimating) this.endTurn();
+    });
+  }
+
+  private endTurn(): void {
+    this.remainingMoves = MOVEMENT_PER_TURN;
+    this.movesText.setText(`Moves: ${this.remainingMoves}`);
   }
 
   private onHexClicked(col: number, row: number): void {
@@ -91,12 +124,14 @@ export class MapScene extends Phaser.Scene {
 
     const steps = path.slice(0, this.remainingMoves);
     this.isAnimating = true;
+    this.endTurnBtn.setAlpha(0.5);
     this.animatePath(steps, 0);
   }
 
   private animatePath(steps: Hex[], index: number): void {
     if (index >= steps.length) {
       this.isAnimating = false;
+      this.endTurnBtn.setAlpha(1);
       return;
     }
     const { col, row } = steps[index]!;
