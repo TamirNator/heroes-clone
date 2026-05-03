@@ -26,16 +26,21 @@ export class MapScene extends Phaser.Scene {
   private isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
-  private enemySprite!: Phaser.GameObjects.Arc;
+  private enemySprite?: Phaser.GameObjects.Arc;
+  private initData: { defeated?: boolean; heroCol?: number; heroRow?: number } = {};
 
   constructor() {
     super("MapScene");
   }
 
+  init(data: { defeated?: boolean; heroCol?: number; heroRow?: number }): void {
+    this.initData = data ?? {};
+  }
+
   create(): void {
     // Phaser reuses the same scene instance on scene.start(); field initializers don't re-run.
-    this.heroCol = 0;
-    this.heroRow = 0;
+    this.heroCol = this.initData.heroCol ?? 0;
+    this.heroRow = this.initData.heroRow ?? 0;
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.isAnimating = false;
 
@@ -76,18 +81,22 @@ export class MapScene extends Phaser.Scene {
       }
     }
 
-    const { x, y } = this.hexCenter(0, 0);
+    const { x, y } = this.hexCenter(this.heroCol, this.heroRow);
 
     this.heroSprite = this.add
       .circle(x, y, this.hexR * 0.45, HERO_FILL)
       .setStrokeStyle(2, HERO_STROKE)
       .setDepth(10);
 
-    const { x: ex, y: ey } = this.hexCenter(ENEMY_COL, ENEMY_ROW);
-    this.enemySprite = this.add
-      .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
-      .setStrokeStyle(2, 0x222222)
-      .setDepth(10);
+    if (!this.initData.defeated) {
+      const { x: ex, y: ey } = this.hexCenter(ENEMY_COL, ENEMY_ROW);
+      this.enemySprite = this.add
+        .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
+        .setStrokeStyle(2, 0x222222)
+        .setDepth(10);
+    } else {
+      this.enemySprite = undefined;
+    }
 
     this.movesText = this.add
       .text(1280 - 20, 20, `Moves: ${this.remainingMoves}`, {
@@ -147,7 +156,7 @@ export class MapScene extends Phaser.Scene {
     if (index >= steps.length) {
       this.isAnimating = false;
       this.endTurnBtn.setAlpha(1);
-      if (this.heroCol === ENEMY_COL && this.heroRow === ENEMY_ROW) {
+      if (this.enemySprite !== undefined && this.heroCol === ENEMY_COL && this.heroRow === ENEMY_ROW) {
         this.scene.start("CombatScene");
       }
       return;

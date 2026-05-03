@@ -29,6 +29,6 @@ export class CombatScene extends Phaser.Scene {
 
     btn.on("pointerover", () => btn.setFillStyle(0x4a6a8a));
     btn.on("pointerout", () => btn.setFillStyle(0x2a3a4a));
-    btn.on("pointerdown", () => this.scene.start("MapScene"));
+    btn.on("pointerdown", () => this.scene.start("MapScene", { defeated: true, heroCol: 4, heroRow: 4 }));
   }
 }

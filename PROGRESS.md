@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S4.1 — Defeat outcome (enemy removed, hero takes enemy's hex)
+**Coder:** CombatScene's Return button now passes `{ defeated: true, heroCol: 4, heroRow: 4 }` via `scene.start("MapScene", data)`. MapScene gained `init(data)` lifecycle hook + `initData` field; `create()` reads it to (a) place hero at `(initData.heroCol ?? 0, initData.heroRow ?? 0)` and (b) skip enemy render when `initData.defeated === true`. `enemySprite` field is now optional. Encounter trigger guards on `this.enemySprite !== undefined`.
+**Verification:** new e2e `e2e/s4-1-defeat.spec.ts` — both s4-0 and s4-1 tests pass (3.7s total). Screenshot `test-results/s4-1-after-return.png` confirms: hero at hex (4,4), enemy absent, Moves: 5.
+**Status:** ✅ shipped — verified entirely without human eyeball test (Playwright + screenshot read by PM).
+
+---
+
 ## S4.0 — Enemy on map + walk-onto-enemy triggers stub Combat scene
 **Coder:** Added `ENEMY_COL=4`, `ENEMY_ROW=4` constants, `enemySprite` field; renders red `Arc` (fill `0xcc4444`, stroke `0x222222` w2, depth 10) at hex(4,4). Encounter trigger inside `animatePath`'s post-animation block (`index >= steps.length`): if hero coords match enemy coords, `scene.start("CombatScene")`. New `src/scenes/CombatScene.ts` (34 lines): dark `#1a0a0a` bg, "COMBAT" 64px gold centered, "Return to Map" Rectangle button → `scene.start("MapScene")`. `src/main.ts` registers CombatScene.
 **QA (headless):** PASS — diff scope clean, deps unchanged, build/tsc/curl green, all spec items verified in source.
