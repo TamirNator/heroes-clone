@@ -12,6 +12,25 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## INFRA — Playwright e2e testing
+**Goal:** PM owns verification. Stop asking the user to do click tests.
+**Setup:** `@playwright/test` v1.59.1 + Chromium binary. `playwright.config.ts` with auto-spawned Vite dev server, `baseURL` http://localhost:5173, viewport 1400×800, screenshot-on-failure, trace-on-failure. `npm run test:e2e` runs the suite. `e2e/` dir for tests. `playwright-report/` and `test-results/` gitignored.
+**Hook for tests:** `src/main.ts` exposes `window.__game` in `import.meta.env.DEV` only — production builds don't leak Phaser internals. Tests read scene state via `g.scene.getScenes(true)` and find game objects by type (Rectangle, Arc, etc.) for click coords.
+**First test:** `e2e/s4-0-encounter.spec.ts` — full encounter flow. Test teleports hero to (4,3) before clicking enemy at (4,4) since fresh-start budget (5) is shy of BFS distance from (0,0).
+**Status:** ✅ infra in place; future slices add tests as needed.
+
+---
+
+## S4.0 — Enemy on map + walk-onto-enemy triggers stub Combat scene
+**Coder:** Added `ENEMY_COL=4`, `ENEMY_ROW=4` constants, `enemySprite` field; renders red `Arc` (fill `0xcc4444`, stroke `0x222222` w2, depth 10) at hex(4,4). Encounter trigger inside `animatePath`'s post-animation block (`index >= steps.length`): if hero coords match enemy coords, `scene.start("CombatScene")`. New `src/scenes/CombatScene.ts` (34 lines): dark `#1a0a0a` bg, "COMBAT" 64px gold centered, "Return to Map" Rectangle button → `scene.start("MapScene")`. `src/main.ts` registers CombatScene.
+**QA (headless):** PASS — diff scope clean, deps unchanged, build/tsc/curl green, all spec items verified in source.
+**E2E test (Playwright):** PASS first run; screenshots captured of MapScene → CombatScene → MapScene transitions.
+**Bug found by visual screenshot inspection:** back-to-map showed `Moves: 4` (stale state). Root cause: Phaser reuses the same scene instance across `scene.start()` calls; field initializers don't re-run.
+**Fix:** explicit reset of `heroCol/heroRow/remainingMoves/isAnimating` at top of `MapScene.create()`. E2E re-run: PASS, back-to-map now shows `Moves: 5`.
+**Status:** ✅ shipped (with infra + fix).
+
+---
+
 ## S3.2 — End Turn button
 **Coder:** Added `endTurnBtn` (Rectangle 120×36 fill `0x2a3a4a` stroke `0xffcc44` w2, top-right at `(1260, 50)` with `setOrigin(1,0)`), centered "End Turn" text overlay, hover handler swaps fill, `pointerdown` triggers `endTurn()` which resets `remainingMoves = MOVEMENT_PER_TURN` and updates label. Button alpha → 0.5 while `isAnimating`, restored on tween complete. Click ignored during animation. Diff purely additive (+35 lines, no other code touched).
 **QA:** PASS WITH FLAGS — flag invalid (QA misread history; thought polygon code was refactored, but that was already the S3.1 alignment fix in HEAD). Real verdict: PASS, no real issues.

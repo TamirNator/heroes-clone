@@ -8,6 +8,8 @@ const STROKE_COLOR = 0x556677;
 const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
+const ENEMY_COL = 4;
+const ENEMY_ROW = 4;
 
 type Hex = { col: number; row: number };
 
@@ -24,12 +26,19 @@ export class MapScene extends Phaser.Scene {
   private isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
+  private enemySprite!: Phaser.GameObjects.Arc;
 
   constructor() {
     super("MapScene");
   }
 
   create(): void {
+    // Phaser reuses the same scene instance on scene.start(); field initializers don't re-run.
+    this.heroCol = 0;
+    this.heroRow = 0;
+    this.remainingMoves = MOVEMENT_PER_TURN;
+    this.isAnimating = false;
+
     const margin = 20;
     const rFromW = (1280 - 2 * margin) / ((COLS + 0.5) * Math.sqrt(3));
     const rFromH = (720 - 2 * margin) / (1.5 * ROWS + 0.5);
@@ -72,6 +81,12 @@ export class MapScene extends Phaser.Scene {
     this.heroSprite = this.add
       .circle(x, y, this.hexR * 0.45, HERO_FILL)
       .setStrokeStyle(2, HERO_STROKE)
+      .setDepth(10);
+
+    const { x: ex, y: ey } = this.hexCenter(ENEMY_COL, ENEMY_ROW);
+    this.enemySprite = this.add
+      .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
+      .setStrokeStyle(2, 0x222222)
       .setDepth(10);
 
     this.movesText = this.add
@@ -132,6 +147,9 @@ export class MapScene extends Phaser.Scene {
     if (index >= steps.length) {
       this.isAnimating = false;
       this.endTurnBtn.setAlpha(1);
+      if (this.heroCol === ENEMY_COL && this.heroRow === ENEMY_ROW) {
+        this.scene.start("CombatScene");
+      }
       return;
     }
     const { col, row } = steps[index]!;
