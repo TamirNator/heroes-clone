@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S5.1 — Combat attack loop with victory/defeat
+**Coder:** Added `HERO_DAMAGE=2`, `ENEMY_DAMAGE=1` constants. State fields `heroHp`, `enemyHp`, `combatOver`, plus refs `heroHpText`, `enemyHpText`, `attackBtn`. Attack button (Rectangle 140×40) at (320, 530) below hero stack. `onAttack()`: subtract HERO_DAMAGE from enemyHp (clamped to 0), update label; if enemy dies → dim button + `showOutcome(true)`; else schedule `enemyAttack()` after 400ms. `enemyAttack()`: subtract ENEMY_DAMAGE from heroHp; if hero dies → `showOutcome(false)`. `showOutcome()`: render large outcome text (VICTORY! green or DEFEAT red) at (640, 600), then after 1500ms `scene.start("MapScene", ...)` — victory passes `{defeated:true, heroCol:4, heroRow:4}`, defeat passes nothing (full reset).
+**Deterministic combat:** Round 1: enemy 5→3, hero 10→9. Round 2: enemy 3→1, hero 9→8. Round 3: enemy 1→0 → VICTORY (no retaliation). Hero ends with 8 HP.
+**Verification:** new e2e `e2e/s5-1-combat-attack.spec.ts` covers full attack→victory→return flow. All 4 e2e tests pass (5.8s). PM verified screenshots: mid-combat (HP:3), victory (green text, HP 8 vs 0), after-return (hero at (4,4), enemy gone).
+**Status:** ✅ shipped.
+
+---
+
 ## S5.0 — Combat scene visual stacks
 **Coder:** Replaced placeholder "COMBAT" text with hero/enemy stack layout. Hero (gold Arc r=50, "Hero" label, "HP: 10" label) at x=320; enemy (red Arc r=50, "Enemy" label, "HP: 5" label) at x=960; "VS" text gray center. Constants `HERO_HP=10`, `ENEMY_HP=5`. Return button moved to top-left (120, 50) to clear combat area; still calls `scene.start("MapScene", { defeated: true, heroCol: 4, heroRow: 4 })`. No interaction yet.
 **Verification:** new e2e `e2e/s5-0-combat-layout.spec.ts` — all 3 tests pass (3.8s). PM verified screenshot `test-results/s5-0-combat.png` shows correct layout.
