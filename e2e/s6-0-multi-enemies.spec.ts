@@ -80,7 +80,7 @@ test.describe('S6.0 — multiple enemies', () => {
       const map = g.scene.getScene('MapScene') as any;
       return map.liveEnemies.length as number;
     });
-    expect(initialCount).toBe(3);
+    expect(initialCount).toBe(5);
 
     await page.screenshot({ path: 'test-results/s6-0-initial.png' });
 
@@ -93,7 +93,7 @@ test.describe('S6.0 — multiple enemies', () => {
       const map = g.scene.getScene('MapScene') as any;
       return { size: map.liveEnemies.length as number, has44: map.liveEnemies.some((e: any) => e.data.col === 4 && e.data.row === 4) as boolean };
     });
-    expect(afterFirst.size).toBe(2);
+    expect(afterFirst.size).toBe(4);
     expect(afterFirst.has44).toBe(false);
 
     await page.screenshot({ path: 'test-results/s6-0-after-first-defeat.png' });
@@ -107,7 +107,7 @@ test.describe('S6.0 — multiple enemies', () => {
       const map = g.scene.getScene('MapScene') as any;
       return { size: map.liveEnemies.length as number, has107: map.liveEnemies.some((e: any) => e.data.col === 10 && e.data.row === 7) as boolean };
     });
-    expect(afterSecond.size).toBe(1);
+    expect(afterSecond.size).toBe(3);
     expect(afterSecond.has107).toBe(false);
 
     await page.screenshot({ path: 'test-results/s6-0-after-second-defeat.png' });

@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S9.0 — Fast enemy type (Wolves, v0.5 kickoff)
+**Coder:** New `Wolf` type at (5,11) and (12,2). Stats: HP=4, dmg 1-2, **`movesPerTurn: 2`** (vs 1 for slow enemies). Visually orange-red `0xff8844` to distinguish from dark-red `0xcc4444` slows. `Enemy` type extended with `movesPerTurn`. `runEnemyStep(i)` now delegates to `runEnemyMultiStep(i, stepsRemaining)` which recursively does N hops per enemy, recomputing Dijkstra each step, checking for hero collision after each (combat triggers if hit).
+**Test updates:** s4-1, s6-0, s6-1, s7-1 had counts updated for 5 enemies instead of 3. New e2e `s9-0-fast-enemy.spec.ts` asserts Wolf moves 2 BFS hops vs Goblin's 1 after one End Turn.
+**Verification:** all 22 tests pass (23.9s). PM verified screenshot showing Wolves visibly closer to hero than slow enemies after one turn.
+**Status:** ✅ shipped.
+
+---
+
 ## S8.1 — Terrain movement cost + Dijkstra
 **Coder:** `TERRAIN_COST = { grass: 1, forest: 2, water: Infinity }`. Replaced `bfsPath` with `dijkstraPath` (mutable priority queue, sorted by accumulated distance) — uniform-cost case still gives same paths. New `truncatePathToBudget(path, budget)` walks the path summing entry costs and returns only fully-affordable steps. Hero `animatePath` decrements `remainingMoves` by destination tile's cost per hop. Enemy AI still takes exactly one step per turn (no budget). Public `lastPath` exposed for test introspection.
 **Net effect:** Dijkstra picks cheaper grass paths even when the forest direct-path is fewer hops, since 2×forest=4 > 4×grass=4 (tie) or worse. Players have to plan around forest patches.

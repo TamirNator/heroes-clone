@@ -93,7 +93,7 @@ test.describe('S4.1 — defeat outcome', () => {
       };
     });
     expect(afterState.enemyGone).toBe(true);
-    expect(afterState.remainingCount).toBe(2);
+    expect(afterState.remainingCount).toBe(4);
 
     // Hero must be at hex (4,4)
     const heroPos = await page.evaluate(() => {

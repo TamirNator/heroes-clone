@@ -88,11 +88,14 @@ test.describe('S6.1 — game won state', () => {
       }
       (g.registry.get('defeatedEnemies') as Set<string>).add('4,4');
       (g.registry.get('defeatedEnemies') as Set<string>).add('10,7');
+      (g.registry.get('defeatedEnemies') as Set<string>).add('5,11');
+      (g.registry.get('defeatedEnemies') as Set<string>).add('12,2');
       // Remove sprites visually so they don't confuse the encounter trigger
-      const idx44 = map.liveEnemies.findIndex((e: any) => e.data.col === 4 && e.data.row === 4);
-      if (idx44 >= 0) { map.liveEnemies[idx44].sprite.destroy(); map.liveEnemies.splice(idx44, 1); }
-      const idx107 = map.liveEnemies.findIndex((e: any) => e.data.col === 10 && e.data.row === 7);
-      if (idx107 >= 0) { map.liveEnemies[idx107].sprite.destroy(); map.liveEnemies.splice(idx107, 1); }
+      for (const key of ['4,4', '10,7', '5,11', '12,2']) {
+        const [kc, kr] = key.split(',').map(Number);
+        const idx = map.liveEnemies.findIndex((e: any) => e.data.col === kc && e.data.row === kr);
+        if (idx >= 0) { map.liveEnemies[idx].sprite.destroy(); map.liveEnemies.splice(idx, 1); }
+      }
     });
 
     // Defeat the last enemy at (15,11) through the full combat flow
@@ -129,7 +132,7 @@ test.describe('S6.1 — game won state', () => {
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map?.liveEnemies?.length === 3 && map?.gameWon === false;
+      return map?.liveEnemies?.length === 5 && map?.gameWon === false;
     }, null, { timeout: 5000 });
 
     const afterNewGame = await page.evaluate(() => {
@@ -143,7 +146,7 @@ test.describe('S6.1 — game won state', () => {
       };
     });
 
-    expect(afterNewGame.enemyCount).toBe(3);
+    expect(afterNewGame.enemyCount).toBe(5);
     expect(afterNewGame.heroCol).toBe(0);
     expect(afterNewGame.heroRow).toBe(0);
     expect(afterNewGame.gameWon).toBe(false);

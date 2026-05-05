@@ -33,11 +33,13 @@ const TERRAIN_COST: Record<Terrain, number> = {
   water: Infinity,
 };
 
-type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number };
+type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number };
 const ENEMIES: readonly Enemy[] = [
-  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1 },
-  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2 },
-  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3 },
+  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1, movesPerTurn: 1 },
+  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2, movesPerTurn: 1 },
+  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3, movesPerTurn: 1 },
+  { col: 5, row: 11, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
+  { col: 12, row: 2, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
 ];
 
 type Hex = { col: number; row: number };
@@ -176,8 +178,9 @@ export class MapScene extends Phaser.Scene {
     for (const enemy of ENEMIES) {
       if (this.isDefeated(enemy.col, enemy.row)) continue;
       const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
+      const fillColor = enemy.name === "Wolf" ? 0xff8844 : 0xcc4444;
       const sprite = this.add
-        .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
+        .circle(ex, ey, this.hexR * 0.45, fillColor)
         .setStrokeStyle(2, 0x222222)
         .setDepth(10);
       this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite });
@@ -331,6 +334,15 @@ export class MapScene extends Phaser.Scene {
       this.saveProgress();
       return;
     }
+    const enemy = this.liveEnemies[index]!;
+    this.runEnemyMultiStep(index, enemy.data.movesPerTurn);
+  }
+
+  private runEnemyMultiStep(index: number, stepsRemaining: number): void {
+    if (stepsRemaining === 0) {
+      this.runEnemyStep(index + 1);
+      return;
+    }
 
     const enemy = this.liveEnemies[index]!;
     const path = this.dijkstraPath(enemy.col, enemy.row, this.heroCol, this.heroRow);
@@ -368,7 +380,7 @@ export class MapScene extends Phaser.Scene {
           return;
         }
 
-        this.runEnemyStep(index + 1);
+        this.runEnemyMultiStep(index, stepsRemaining - 1);
       },
     });
   }
