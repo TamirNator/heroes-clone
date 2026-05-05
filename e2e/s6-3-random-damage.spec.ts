@@ -34,7 +34,8 @@ async function openTrollCombat(page: any) {
   const pos = await page.evaluate(() => {
     const g = (window as any).__game;
     const map = g.scene.getScene('MapScene') as any;
-    const sprite = map.enemySprites.get('15,11');
+    const le = map.liveEnemies.find((e: any) => e.col === 15 && e.row === 11);
+    const sprite = le?.sprite;
     const cvs: HTMLCanvasElement = g.canvas;
     const rect = cvs.getBoundingClientRect();
     const scaleX = rect.width / g.config.width;

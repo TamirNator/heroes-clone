@@ -24,7 +24,9 @@ async function defeatEnemyViaAttack(page: any, enemyKey: string) {
   const pos = await page.evaluate((key: string) => {
     const g = (window as any).__game;
     const map = g.scene.getScene('MapScene') as any;
-    const sprite = map.enemySprites.get(key);
+    const [ecol, erow] = key.split(',').map(Number);
+    const le = map.liveEnemies.find((e: any) => e.col === ecol && e.row === erow);
+    const sprite = le?.sprite;
     const cvs: HTMLCanvasElement = g.canvas;
     const rect = cvs.getBoundingClientRect();
     const scaleX = rect.width / g.config.width;
@@ -87,10 +89,10 @@ test.describe('S6.1 — game won state', () => {
       (g.registry.get('defeatedEnemies') as Set<string>).add('4,4');
       (g.registry.get('defeatedEnemies') as Set<string>).add('10,7');
       // Remove sprites visually so they don't confuse the encounter trigger
-      map.enemySprites.get('4,4')?.destroy();
-      map.enemySprites.delete('4,4');
-      map.enemySprites.get('10,7')?.destroy();
-      map.enemySprites.delete('10,7');
+      const idx44 = map.liveEnemies.findIndex((e: any) => e.data.col === 4 && e.data.row === 4);
+      if (idx44 >= 0) { map.liveEnemies[idx44].sprite.destroy(); map.liveEnemies.splice(idx44, 1); }
+      const idx107 = map.liveEnemies.findIndex((e: any) => e.data.col === 10 && e.data.row === 7);
+      if (idx107 >= 0) { map.liveEnemies[idx107].sprite.destroy(); map.liveEnemies.splice(idx107, 1); }
     });
 
     // Defeat the last enemy at (15,11) through the full combat flow
@@ -108,7 +110,7 @@ test.describe('S6.1 — game won state', () => {
       return {
         gameWon: map.gameWon as boolean,
         hasWonText: texts.some(t => t.includes('GAME WON!')),
-        enemyCount: map.enemySprites.size as number,
+        enemyCount: map.liveEnemies.length as number,
       };
     });
 
@@ -127,14 +129,14 @@ test.describe('S6.1 — game won state', () => {
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map?.enemySprites?.size === 3 && map?.gameWon === false;
+      return map?.liveEnemies?.length === 3 && map?.gameWon === false;
     }, null, { timeout: 5000 });
 
     const afterNewGame = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
       return {
-        enemyCount: map.enemySprites.size as number,
+        enemyCount: map.liveEnemies.length as number,
         heroCol: map.heroCol as number,
         heroRow: map.heroRow as number,
         gameWon: map.gameWon as boolean,

@@ -17,7 +17,9 @@ async function getEnemyViewportPos(page: any, key: string) {
   return page.evaluate((key: string) => {
     const g = (window as any).__game;
     const map = g.scene.getScene('MapScene') as any;
-    const sprite = map.enemySprites.get(key);
+    const [col, row] = key.split(',').map(Number);
+    const le = map.liveEnemies.find((e: any) => e.col === col && e.row === row);
+    const sprite = le?.sprite;
     const cvs: HTMLCanvasElement = g.canvas;
     const rect = cvs.getBoundingClientRect();
     const scaleX = rect.width / g.config.width;
@@ -76,7 +78,7 @@ test.describe('S6.0 — multiple enemies', () => {
     const initialCount = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map.enemySprites.size as number;
+      return map.liveEnemies.length as number;
     });
     expect(initialCount).toBe(3);
 
@@ -89,7 +91,7 @@ test.describe('S6.0 — multiple enemies', () => {
     const afterFirst = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return { size: map.enemySprites.size as number, has44: map.enemySprites.has('4,4') as boolean };
+      return { size: map.liveEnemies.length as number, has44: map.liveEnemies.some((e: any) => e.data.col === 4 && e.data.row === 4) as boolean };
     });
     expect(afterFirst.size).toBe(2);
     expect(afterFirst.has44).toBe(false);
@@ -103,7 +105,7 @@ test.describe('S6.0 — multiple enemies', () => {
     const afterSecond = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return { size: map.enemySprites.size as number, has107: map.enemySprites.has('10,7') as boolean };
+      return { size: map.liveEnemies.length as number, has107: map.liveEnemies.some((e: any) => e.data.col === 10 && e.data.row === 7) as boolean };
     });
     expect(afterSecond.size).toBe(1);
     expect(afterSecond.has107).toBe(false);

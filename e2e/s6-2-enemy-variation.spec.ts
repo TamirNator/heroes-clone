@@ -24,7 +24,9 @@ async function getEnemyViewportPos(page: any, key: string) {
   return page.evaluate((key: string) => {
     const g = (window as any).__game;
     const map = g.scene.getScene('MapScene') as any;
-    const sprite = map.enemySprites.get(key);
+    const [col, row] = key.split(',').map(Number);
+    const le = map.liveEnemies.find((e: any) => e.col === col && e.row === row);
+    const sprite = le?.sprite;
     const cvs: HTMLCanvasElement = g.canvas;
     const rect = cvs.getBoundingClientRect();
     const scaleX = rect.width / g.config.width;

@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S7.0 — Enemy AI movement on End Turn
+**Coder:** Refactored `enemySprites: Map` → `liveEnemies: LiveEnemy[]` where `LiveEnemy = { col, row, data, sprite }`. The mutable `col`/`row` track current position (changes on AI move); `data` holds spawn info (used as the registry key for defeat tracking). Added `runEnemyTurn()` triggered by End Turn click after `remainingMoves` refresh: each living enemy in turn does BFS to hero, takes one tile step, animates 150ms. If an enemy lands on hero's hex, immediate `scene.start("CombatScene", ...)` with `originalCol/Row` (spawn) AND `enemyCol/Row` (current). CombatScene's victory/return paths use `originalCol ?? enemyCol` for the defeat registry key — so a defeated wandering enemy stays defeated even though it left its spawn.
+**Test updates:** all 8 prior tests updated for `liveEnemies` shape (sprite lookups via `find`, size checks via `length`). `s7-0-enemy-ai.spec.ts` adds two tests: (a) verify enemy moves after End Turn, (b) End Turn 8–10× until Goblin reaches hero → CombatScene auto-triggers.
+**Verification:** all 11 e2e tests pass (16.9s). PM verified screenshot showing all 3 enemies moved one tile closer to hero.
+**Status:** ✅ shipped — game now meaningfully tactical, not just "walk to enemies".
+
+---
+
 ## S6.3 — Random damage rolls + floating damage text
 **Coder:** Replaced single `damage` field with `damageMin`/`damageMax` per enemy. Hero rolls 1–3, Goblin 1–1, Orc 1–2, Troll 2–3. CombatScene exposes public injectable RNG fields (`rollHeroDamage`, `rollEnemyDamage`) so e2e tests can pin to deterministic values via `page.evaluate`. Added floating damage text — `-N` rendered at the hit stack's coords, tweened up 40px and faded over 600ms, then destroyed.
 **Test updates:** s5-1, s6-0, s6-1 now inject deterministic rolls (hero=2, enemy=1) after waiting for CombatScene; existing click counts unchanged. s6-2 asserts on `damageMin/Max` instead of `damage`. New `e2e/s6-3-random-damage.spec.ts` runs 100× rolls in-page to verify variance, plus a pinned-rolls case (hero=3, enemy=2 vs Troll → VICTORY in 3 hits, hero ends at 6 HP).

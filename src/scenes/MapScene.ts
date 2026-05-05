@@ -18,6 +18,13 @@ const ENEMIES: readonly Enemy[] = [
 
 type Hex = { col: number; row: number };
 
+type LiveEnemy = {
+  col: number;
+  row: number;
+  data: Enemy;
+  sprite: Phaser.GameObjects.Arc;
+};
+
 export class MapScene extends Phaser.Scene {
   private heroCol = 0;
   private heroRow = 0;
@@ -28,10 +35,10 @@ export class MapScene extends Phaser.Scene {
   private startX = 0;
   private startY = 0;
   private remainingMoves = MOVEMENT_PER_TURN;
-  private isAnimating = false;
+  isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
-  private enemySprites: Map<string, Phaser.GameObjects.Arc> = new Map();
+  liveEnemies: LiveEnemy[] = [];
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -54,7 +61,7 @@ export class MapScene extends Phaser.Scene {
     this.heroRow = this.initData.heroRow ?? 0;
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.isAnimating = false;
-    this.enemySprites = new Map();
+    this.liveEnemies = [];
     this.gameWon = false;
 
     // registry persists across scene.start calls — use it to track defeated enemies game-wide.
@@ -113,7 +120,7 @@ export class MapScene extends Phaser.Scene {
         .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
         .setStrokeStyle(2, 0x222222)
         .setDepth(10);
-      this.enemySprites.set(`${enemy.col},${enemy.row}`, sprite);
+      this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite });
     }
 
     const defeated = this.registry.get("defeatedEnemies") as Set<string>;
@@ -184,6 +191,61 @@ export class MapScene extends Phaser.Scene {
   private endTurn(): void {
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.movesText.setText(`Moves: ${this.remainingMoves}`);
+    this.runEnemyTurn();
+  }
+
+  private runEnemyTurn(): void {
+    this.isAnimating = true;
+    this.endTurnBtn.setAlpha(0.5);
+    this.runEnemyStep(0);
+  }
+
+  private runEnemyStep(index: number): void {
+    if (index >= this.liveEnemies.length) {
+      this.isAnimating = false;
+      this.endTurnBtn.setAlpha(1);
+      return;
+    }
+
+    const enemy = this.liveEnemies[index]!;
+    const path = this.bfsPath(enemy.col, enemy.row, this.heroCol, this.heroRow);
+
+    if (path.length === 0) {
+      this.runEnemyStep(index + 1);
+      return;
+    }
+
+    const nextStep = path[0]!;
+    const { x, y } = this.hexCenter(nextStep.col, nextStep.row);
+
+    this.tweens.add({
+      targets: enemy.sprite,
+      x,
+      y,
+      duration: 150,
+      ease: "Linear",
+      onComplete: () => {
+        enemy.col = nextStep.col;
+        enemy.row = nextStep.row;
+
+        if (enemy.col === this.heroCol && enemy.row === this.heroRow) {
+          this.isAnimating = false;
+          this.scene.start("CombatScene", {
+            enemyCol: enemy.col,
+            enemyRow: enemy.row,
+            originalCol: enemy.data.col,
+            originalRow: enemy.data.row,
+            enemyName: enemy.data.name,
+            enemyHp: enemy.data.hp,
+            enemyDamageMin: enemy.data.damageMin,
+            enemyDamageMax: enemy.data.damageMax,
+          });
+          return;
+        }
+
+        this.runEnemyStep(index + 1);
+      },
+    });
   }
 
   private onHexClicked(col: number, row: number): void {
@@ -203,16 +265,17 @@ export class MapScene extends Phaser.Scene {
     if (index >= steps.length) {
       this.isAnimating = false;
       this.endTurnBtn.setAlpha(1);
-      const key = `${this.heroCol},${this.heroRow}`;
-      if (this.enemySprites.has(key)) {
-        const enemy = ENEMIES.find(e => e.col === this.heroCol && e.row === this.heroRow)!;
+      const le = this.liveEnemies.find(e => e.col === this.heroCol && e.row === this.heroRow);
+      if (le) {
         this.scene.start("CombatScene", {
-          enemyCol: enemy.col,
-          enemyRow: enemy.row,
-          enemyName: enemy.name,
-          enemyHp: enemy.hp,
-          enemyDamageMin: enemy.damageMin,
-          enemyDamageMax: enemy.damageMax,
+          enemyCol: le.col,
+          enemyRow: le.row,
+          originalCol: le.data.col,
+          originalRow: le.data.row,
+          enemyName: le.data.name,
+          enemyHp: le.data.hp,
+          enemyDamageMin: le.data.damageMin,
+          enemyDamageMax: le.data.damageMax,
         });
       }
       return;

@@ -31,7 +31,7 @@ test.describe('S5.1 — combat attack loop', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      const sprite = map.enemySprites.get('4,4');
+      const sprite = map.liveEnemies.find((e: any) => e.col === 4 && e.row === 4)?.sprite;
       const cvs: HTMLCanvasElement = g.canvas;
       const rect = cvs.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;
@@ -124,7 +124,7 @@ test.describe('S5.1 — combat attack loop', () => {
     const mapState = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return { enemyGone: !map.enemySprites.has('4,4'), col: map.heroCol, row: map.heroRow };
+      return { enemyGone: !map.liveEnemies.some((e: any) => e.data.col === 4 && e.data.row === 4), col: map.heroCol, row: map.heroRow };
     });
 
     expect(mapState.enemyGone).toBe(true);

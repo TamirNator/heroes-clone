@@ -19,7 +19,7 @@ test.describe('S4.1 — defeat outcome', () => {
     const enemyExistsInitially = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map.enemySprites.has('4,4');
+      return map.liveEnemies.some((e: any) => e.col === 4 && e.row === 4);
     });
     expect(enemyExistsInitially).toBe(true);
 
@@ -41,7 +41,7 @@ test.describe('S4.1 — defeat outcome', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      const sprite = map.enemySprites.get('4,4');
+      const sprite = map.liveEnemies.find((e: any) => e.col === 4 && e.row === 4)?.sprite;
       const canvas: HTMLCanvasElement = g.canvas;
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;
@@ -88,8 +88,8 @@ test.describe('S4.1 — defeat outcome', () => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
       return {
-        enemyGone: !map.enemySprites.has('4,4'),
-        remainingCount: map.enemySprites.size,
+        enemyGone: !map.liveEnemies.some((e: any) => e.data.col === 4 && e.data.row === 4),
+        remainingCount: map.liveEnemies.length,
       };
     });
     expect(afterState.enemyGone).toBe(true);

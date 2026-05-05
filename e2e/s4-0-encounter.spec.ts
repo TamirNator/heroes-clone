@@ -39,7 +39,7 @@ test.describe('S4.0 — encounter trigger', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map: any = g.scene.getScene('MapScene');
-      const sprite = map.enemySprites.get('4,4');
+      const sprite = map.liveEnemies.find((e: any) => e.col === 4 && e.row === 4)?.sprite;
       const canvas: HTMLCanvasElement = g.canvas;
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;

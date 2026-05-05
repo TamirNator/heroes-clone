@@ -17,6 +17,8 @@ export class CombatScene extends Phaser.Scene {
   initData: {
     enemyCol?: number;
     enemyRow?: number;
+    originalCol?: number;
+    originalRow?: number;
     enemyName?: string;
     enemyHp?: number;
     enemyDamageMin?: number;
@@ -35,6 +37,8 @@ export class CombatScene extends Phaser.Scene {
   init(data: {
     enemyCol?: number;
     enemyRow?: number;
+    originalCol?: number;
+    originalRow?: number;
     enemyName?: string;
     enemyHp?: number;
     enemyDamageMin?: number;
@@ -79,8 +83,8 @@ export class CombatScene extends Phaser.Scene {
     returnBtn.on("pointerover", () => returnBtn.setFillStyle(0x4a6a8a));
     returnBtn.on("pointerout", () => returnBtn.setFillStyle(0x2a3a4a));
     returnBtn.on("pointerdown", () => this.scene.start("MapScene", {
-      defeatedCol: this.initData.enemyCol,
-      defeatedRow: this.initData.enemyRow,
+      defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
+      defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
       heroCol: this.initData.enemyCol,
       heroRow: this.initData.enemyRow,
     }));
@@ -142,8 +146,8 @@ export class CombatScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
       if (victory) {
         this.scene.start("MapScene", {
-          defeatedCol: this.initData.enemyCol,
-          defeatedRow: this.initData.enemyRow,
+          defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
+          defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
           heroCol: this.initData.enemyCol,
           heroRow: this.initData.enemyRow,
         });
