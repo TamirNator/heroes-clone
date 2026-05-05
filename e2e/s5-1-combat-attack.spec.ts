@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('S5.1 — combat attack loop', () => {
-  test('3 attacks defeat enemy, VICTORY shown, returns to map with enemy gone', async ({ page }) => {
+  test('2 attacks defeat Goblin, VICTORY shown, returns to map with enemy gone', async ({ page }) => {
     await page.goto('/');
 
     const canvas = page.locator('canvas');
@@ -56,41 +56,7 @@ test.describe('S5.1 — combat attack loop', () => {
       return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
     });
 
-    // Round 1: hero hits enemy 5→3, enemy retaliates hero 10→9
-    await page.mouse.click(attackPos.x, attackPos.y);
-
-    await page.waitForFunction(() => {
-      const g = (window as any).__game;
-      const combat = g.scene.getScene('CombatScene') as any;
-      const texts: string[] = combat.children.list
-        .filter((c: any) => c.type === 'Text')
-        .map((c: any) => c.text as string);
-      return texts.some(t => t === 'HP: 3');
-    }, { timeout: 3000 });
-
-    await page.screenshot({ path: 'test-results/s5-1-mid-combat.png' });
-
-    const afterRound1 = await page.evaluate(() => {
-      const g = (window as any).__game;
-      const combat = g.scene.getScene('CombatScene') as any;
-      const texts: string[] = combat.children.list
-        .filter((c: any) => c.type === 'Text')
-        .map((c: any) => c.text as string);
-      return { enemyHp3: texts.some(t => t === 'HP: 3') };
-    });
-    expect(afterRound1.enemyHp3).toBe(true);
-
-    // Wait for retaliation to complete before next click
-    await page.waitForFunction(() => {
-      const g = (window as any).__game;
-      const combat = g.scene.getScene('CombatScene') as any;
-      const texts: string[] = combat.children.list
-        .filter((c: any) => c.type === 'Text')
-        .map((c: any) => c.text as string);
-      return texts.some(t => t === 'HP: 9');
-    }, { timeout: 2000 });
-
-    // Round 2: hero hits enemy 3→1, enemy retaliates hero 9→8
+    // Round 1: hero hits Goblin 3→1, Goblin retaliates hero 10→9
     await page.mouse.click(attackPos.x, attackPos.y);
 
     await page.waitForFunction(() => {
@@ -100,19 +66,31 @@ test.describe('S5.1 — combat attack loop', () => {
         .filter((c: any) => c.type === 'Text')
         .map((c: any) => c.text as string);
       return texts.some(t => t === 'HP: 1');
-    }, { timeout: 3000 });
+    }, null, { timeout: 3000 });
 
-    // Wait for retaliation
+    await page.screenshot({ path: 'test-results/s5-1-mid-combat.png' });
+
+    const afterRound1 = await page.evaluate(() => {
+      const g = (window as any).__game;
+      const combat = g.scene.getScene('CombatScene') as any;
+      const texts: string[] = combat.children.list
+        .filter((c: any) => c.type === 'Text')
+        .map((c: any) => c.text as string);
+      return { enemyHp1: texts.some(t => t === 'HP: 1') };
+    });
+    expect(afterRound1.enemyHp1).toBe(true);
+
+    // Wait for retaliation to complete before next click
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
       const texts: string[] = combat.children.list
         .filter((c: any) => c.type === 'Text')
         .map((c: any) => c.text as string);
-      return texts.some(t => t === 'HP: 8');
-    }, { timeout: 2000 });
+      return texts.some(t => t === 'HP: 9');
+    }, null, { timeout: 2000 });
 
-    // Round 3: hero hits enemy 1→0 → VICTORY, no retaliation
+    // Round 2: hero hits Goblin 1→0 → VICTORY, no retaliation
     await page.mouse.click(attackPos.x, attackPos.y);
 
     await page.waitForFunction(() => {
@@ -122,7 +100,7 @@ test.describe('S5.1 — combat attack loop', () => {
         .filter((c: any) => c.type === 'Text')
         .map((c: any) => c.text as string);
       return texts.some(t => t === 'VICTORY!');
-    }, { timeout: 3000 });
+    }, null, { timeout: 3000 });
 
     await page.screenshot({ path: 'test-results/s5-1-victory.png' });
 

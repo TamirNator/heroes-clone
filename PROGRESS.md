@@ -21,6 +21,15 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S6.2 — Enemy variation (different stats per enemy)
+**Coder:** Extended `Enemy` type with `name/hp/damage`. Three enemies: **Goblin** (4,4) HP 3 dmg 1, **Orc** (10,7) HP 5 dmg 1, **Troll** (15,11) HP 8 dmg 2. MapScene's encounter trigger looks up the matching enemy and passes full stats to CombatScene. CombatScene's `initData` extended with `enemyName/enemyHp/enemyDamage`. Stack label uses `enemyName`, HP label uses `enemyHp`, retaliation damage uses `enemyDamage` field (replaces removed constant `ENEMY_DAMAGE`). Hero unchanged (HP 10, damage 2).
+**Difficulty curve (in given order):** Goblin → 2 hits, hero ends at 9. Orc → 3 hits, hero ends at 7. Troll → 4 hits, hero ends at 1. Tight but winnable.
+**Test updates:** s5-0/s5-1/s6-0/s6-1 all updated for new stats; click counts adjusted (Goblin 2, Orc 3, Troll 4 attacks). New `e2e/s6-2-enemy-variation.spec.ts` verifies `initData.enemyName/Hp/Damage` for each of the 3 enemies.
+**Verification:** all 7 e2e tests pass (11.2s). PM verified `s6-2-troll.png` shows "Troll" name + "HP: 8".
+**Status:** ✅ shipped.
+
+---
+
 ## S6.1 — Game-won state + New Game replay
 **Coder:** Added `gameWon` field, `renderWinOverlay()` method. Win detection in `create()` after enemy render: if `defeatedEnemies.size >= ENEMIES.length`, render overlay. Overlay = translucent black Rectangle (alpha 0.7, depth 100) + "GAME WON!" 64px green + "All enemies defeated" subtitle + "New Game" button (200×50, green stroke, hover fill swap). New Game click clears the registry's defeated set + `scene.start("MapScene", {})`. **Bug fix bundled:** `scene.start("MapScene")` with no second argument was carrying the prior `init` data; explicit `{}` argument forces clean state. `onHexClicked` and End Turn `pointerdown` short-circuit when `gameWon` is true.
 **Verification:** new e2e `e2e/s6-1-game-won.spec.ts` defeats all 3 enemies (mostly via registry pre-population for speed; final defeat via real click flow), verifies overlay, clicks New Game, verifies fresh state. All 6 e2e tests pass (11.3s). PM verified screenshots.

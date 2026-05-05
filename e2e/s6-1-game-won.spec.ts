@@ -44,7 +44,7 @@ async function defeatEnemyViaAttack(page: any, enemyKey: string) {
     return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
   });
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     await page.mouse.click(attackPos.x, attackPos.y);
     await page.waitForTimeout(600);
   }

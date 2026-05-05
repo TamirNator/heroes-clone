@@ -33,7 +33,7 @@ async function waitForScene(page: any, key: string, timeout = 10000) {
   }, key, { timeout });
 }
 
-async function defeatEnemy(page: any, enemyKey: string) {
+async function defeatEnemy(page: any, enemyKey: string, attackCount: number) {
   const pos = await getEnemyViewportPos(page, enemyKey);
   await page.mouse.click(pos.x, pos.y);
   await waitForScene(page, 'CombatScene');
@@ -47,10 +47,8 @@ async function defeatEnemy(page: any, enemyKey: string) {
     return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
   });
 
-  // 3 attacks to kill enemy (HP 5, hero deals 2 per round)
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < attackCount; i++) {
     await page.mouse.click(attackPos.x, attackPos.y);
-    // Wait for each round to settle (attack + retaliation delay ~500ms, or victory text)
     await page.waitForTimeout(600);
   }
 
@@ -76,9 +74,9 @@ test.describe('S6.0 — multiple enemies', () => {
 
     await page.screenshot({ path: 'test-results/s6-0-initial.png' });
 
-    // Defeat enemy[0] at (4,4)
+    // Defeat Goblin at (4,4) — HP 3, needs 2 attacks
     await teleportHero(page, 4, 3);
-    await defeatEnemy(page, '4,4');
+    await defeatEnemy(page, '4,4', 2);
 
     const afterFirst = await page.evaluate(() => {
       const g = (window as any).__game;
@@ -90,9 +88,9 @@ test.describe('S6.0 — multiple enemies', () => {
 
     await page.screenshot({ path: 'test-results/s6-0-after-first-defeat.png' });
 
-    // Defeat enemy[1] at (10,7)
+    // Defeat Orc at (10,7) — HP 5, needs 3 attacks
     await teleportHero(page, 10, 6);
-    await defeatEnemy(page, '10,7');
+    await defeatEnemy(page, '10,7', 3);
 
     const afterSecond = await page.evaluate(() => {
       const g = (window as any).__game;

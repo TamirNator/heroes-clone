@@ -1,30 +1,31 @@
 import Phaser from "phaser";
 
 const HERO_HP = 10;
-const ENEMY_HP = 5;
+const ENEMY_HP_DEFAULT = 5;
 const HERO_DAMAGE = 2;
-const ENEMY_DAMAGE = 1;
 
 export class CombatScene extends Phaser.Scene {
   private heroHp = HERO_HP;
-  private enemyHp = ENEMY_HP;
+  private enemyHp = ENEMY_HP_DEFAULT;
+  private enemyDamage = 1;
   private combatOver = false;
   private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
   private attackBtn!: Phaser.GameObjects.Rectangle;
-  private initData: { enemyCol?: number; enemyRow?: number } = {};
+  initData: { enemyCol?: number; enemyRow?: number; enemyName?: string; enemyHp?: number; enemyDamage?: number } = {};
 
   constructor() {
     super("CombatScene");
   }
 
-  init(data: { enemyCol?: number; enemyRow?: number }): void {
+  init(data: { enemyCol?: number; enemyRow?: number; enemyName?: string; enemyHp?: number; enemyDamage?: number }): void {
     this.initData = data ?? {};
   }
 
   create(): void {
     this.heroHp = HERO_HP;
-    this.enemyHp = ENEMY_HP;
+    this.enemyHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
+    this.enemyDamage = this.initData.enemyDamage ?? 1;
     this.combatOver = false;
 
     this.cameras.main.setBackgroundColor("#1a0a0a");
@@ -35,7 +36,7 @@ export class CombatScene extends Phaser.Scene {
     this.heroHpText = this.add.text(320, 440, `HP: ${this.heroHp}`, { fontSize: "24px", color: "#ffcc44" }).setOrigin(0.5);
 
     // Enemy stack (right)
-    this.add.text(960, 280, "Enemy", { fontSize: "20px", color: "#cc4444" }).setOrigin(0.5);
+    this.add.text(960, 280, this.initData.enemyName ?? "Enemy", { fontSize: "20px", color: "#cc4444" }).setOrigin(0.5);
     this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
     this.enemyHpText = this.add.text(960, 440, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" }).setOrigin(0.5);
 
@@ -90,7 +91,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private enemyAttack(): void {
-    this.heroHp = Math.max(0, this.heroHp - ENEMY_DAMAGE);
+    this.heroHp = Math.max(0, this.heroHp - this.enemyDamage);
     this.heroHpText.setText(`HP: ${this.heroHp}`);
 
     if (this.heroHp <= 0) {

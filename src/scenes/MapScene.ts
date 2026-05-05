@@ -9,11 +9,11 @@ const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
 
-type Enemy = { col: number; row: number };
+type Enemy = { col: number; row: number; name: string; hp: number; damage: number };
 const ENEMIES: readonly Enemy[] = [
-  { col: 4, row: 4 },
-  { col: 10, row: 7 },
-  { col: 15, row: 11 },
+  { col: 4, row: 4, name: "Goblin", hp: 3, damage: 1 },
+  { col: 10, row: 7, name: "Orc", hp: 5, damage: 1 },
+  { col: 15, row: 11, name: "Troll", hp: 8, damage: 2 },
 ];
 
 type Hex = { col: number; row: number };
@@ -205,7 +205,14 @@ export class MapScene extends Phaser.Scene {
       this.endTurnBtn.setAlpha(1);
       const key = `${this.heroCol},${this.heroRow}`;
       if (this.enemySprites.has(key)) {
-        this.scene.start("CombatScene", { enemyCol: this.heroCol, enemyRow: this.heroRow });
+        const enemy = ENEMIES.find(e => e.col === this.heroCol && e.row === this.heroRow)!;
+        this.scene.start("CombatScene", {
+          enemyCol: enemy.col,
+          enemyRow: enemy.row,
+          enemyName: enemy.name,
+          enemyHp: enemy.hp,
+          enemyDamage: enemy.damage,
+        });
       }
       return;
     }
