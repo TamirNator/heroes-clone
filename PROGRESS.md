@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S8.1 — Terrain movement cost + Dijkstra
+**Coder:** `TERRAIN_COST = { grass: 1, forest: 2, water: Infinity }`. Replaced `bfsPath` with `dijkstraPath` (mutable priority queue, sorted by accumulated distance) — uniform-cost case still gives same paths. New `truncatePathToBudget(path, budget)` walks the path summing entry costs and returns only fully-affordable steps. Hero `animatePath` decrements `remainingMoves` by destination tile's cost per hop. Enemy AI still takes exactly one step per turn (no budget). Public `lastPath` exposed for test introspection.
+**Net effect:** Dijkstra picks cheaper grass paths even when the forest direct-path is fewer hops, since 2×forest=4 > 4×grass=4 (tie) or worse. Players have to plan around forest patches.
+**Verification:** new e2e `e2e/s8-1-terrain-cost.spec.ts` covers 3 cases (cost spending, budget truncation, path-prefers-grass). All 21 tests pass (21s). PM verified screenshot showing hero on a forest tile after a multi-hop walk.
+**Status:** ✅ shipped — closes v0.4 (map variety).
+
+---
+
 ## S8.0 — Terrain types + impassable tiles (v0.4 kickoff)
 **Coder:** Three terrain types: **grass** `0x2a3a4a` (default, walkable, 282 tiles), **forest** `0x2d4a2d` (walkable, 10 tiles in 3 patches), **water** `0x1a3a5a` (impassable, 8 tiles in 2 barriers — diagonal upper-middle + vertical right side). `TERRAIN_OVERRIDES` map keyed by `"col,row"` provides per-tile lookup with grass fallback. Hover variants per terrain. `terrainAt(col,row)` + `isPassable(col,row)` helpers; `bfsPath()` filters neighbors by `isPassable` AND short-circuits if destination is impassable. Same BFS used by hero pathfinding and enemy AI, so neither can route through water.
 **Verification:** new e2e `e2e/s8-0-terrain.spec.ts` (multiple sub-tests for terrain rendering, hero water-block, enemy AI water-block, pathing-around). All 18 e2e tests pass (20.1s). PM verified screenshot shows all 3 terrain types and barriers.

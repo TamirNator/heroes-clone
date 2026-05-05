@@ -27,6 +27,11 @@ const TERRAIN_OVERRIDES: Record<string, Terrain> = {
   "8,9": "forest", "9,9": "forest", "8,10": "forest", "9,10": "forest",
   "16,3": "forest", "17,3": "forest", "16,4": "forest",
 };
+const TERRAIN_COST: Record<Terrain, number> = {
+  grass: 1,
+  forest: 2,
+  water: Infinity,
+};
 
 type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number };
 const ENEMIES: readonly Enemy[] = [
@@ -66,6 +71,7 @@ export class MapScene extends Phaser.Scene {
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
   private resetBtn!: Phaser.GameObjects.Rectangle;
   liveEnemies: LiveEnemy[] = [];
+  public lastPath: Hex[] = [];
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -327,7 +333,7 @@ export class MapScene extends Phaser.Scene {
     }
 
     const enemy = this.liveEnemies[index]!;
-    const path = this.bfsPath(enemy.col, enemy.row, this.heroCol, this.heroRow);
+    const path = this.dijkstraPath(enemy.col, enemy.row, this.heroCol, this.heroRow);
 
     if (path.length === 0) {
       this.runEnemyStep(index + 1);
@@ -371,10 +377,11 @@ export class MapScene extends Phaser.Scene {
     if (this.isAnimating || this.remainingMoves === 0 || this.gameWon) return;
     if (col === this.heroCol && row === this.heroRow) return;
 
-    const path = this.bfsPath(this.heroCol, this.heroRow, col, row);
+    const path = this.dijkstraPath(this.heroCol, this.heroRow, col, row);
     if (path.length === 0) return;
 
-    const steps = path.slice(0, this.remainingMoves);
+    this.lastPath = path;
+    const steps = this.truncatePathToBudget(path, this.remainingMoves);
     this.isAnimating = true;
     this.endTurnBtn.setAlpha(0.5);
     this.animatePath(steps, 0);
@@ -412,7 +419,7 @@ export class MapScene extends Phaser.Scene {
       onComplete: () => {
         this.heroCol = col;
         this.heroRow = row;
-        this.remainingMoves--;
+        this.remainingMoves -= TERRAIN_COST[this.terrainAt(col, row)];
         this.movesText.setText(`Moves: ${this.remainingMoves}`);
         this.animatePath(steps, index + 1);
       },
@@ -427,41 +434,58 @@ export class MapScene extends Phaser.Scene {
     return this.terrainAt(col, row) !== "water";
   }
 
-  private bfsPath(
+  private dijkstraPath(
     fromCol: number,
     fromRow: number,
     toCol: number,
     toRow: number
   ): Hex[] {
     if (!this.isPassable(toCol, toRow)) return [];
-    const key = (c: number, r: number): string => `${c},${r}`;
-    const visited = new Set<string>();
+    const dist = new Map<string, number>();
     const prev = new Map<string, Hex>();
-    const queue: Hex[] = [{ col: fromCol, row: fromRow }];
-    const startKey = key(fromCol, fromRow);
-    visited.add(startKey);
-
+    const startKey = `${fromCol},${fromRow}`;
+    dist.set(startKey, 0);
+    const queue: Array<{ key: string; col: number; row: number; d: number }> = [
+      { key: startKey, col: fromCol, row: fromRow, d: 0 },
+    ];
     while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (current.col === toCol && current.row === toRow) {
-        const path: Hex[] = [];
-        let node: Hex = current;
-        while (key(node.col, node.row) !== startKey) {
-          path.unshift(node);
-          node = prev.get(key(node.col, node.row))!;
-        }
-        return path;
-      }
-      for (const nb of this.hexNeighbors(current.col, current.row)) {
-        const nk = key(nb.col, nb.row);
-        if (!visited.has(nk) && this.isPassable(nb.col, nb.row)) {
-          visited.add(nk);
-          prev.set(nk, current);
-          queue.push(nb);
+      queue.sort((a, b) => a.d - b.d);
+      const u = queue.shift()!;
+      if (u.col === toCol && u.row === toRow) break;
+      if (u.d > (dist.get(u.key) ?? Infinity)) continue;
+      for (const nb of this.hexNeighbors(u.col, u.row)) {
+        if (!this.isPassable(nb.col, nb.row)) continue;
+        const cost = TERRAIN_COST[this.terrainAt(nb.col, nb.row)];
+        const nk = `${nb.col},${nb.row}`;
+        const newD = u.d + cost;
+        if (newD < (dist.get(nk) ?? Infinity)) {
+          dist.set(nk, newD);
+          prev.set(nk, { col: u.col, row: u.row });
+          queue.push({ key: nk, col: nb.col, row: nb.row, d: newD });
         }
       }
     }
-    return [];
+    const target = `${toCol},${toRow}`;
+    if (!prev.has(target) && startKey !== target) return [];
+    const path: Hex[] = [];
+    let cur: Hex = { col: toCol, row: toRow };
+    while (`${cur.col},${cur.row}` !== startKey) {
+      path.unshift(cur);
+      cur = prev.get(`${cur.col},${cur.row}`)!;
+    }
+    return path;
+  }
+
+  private truncatePathToBudget(path: Hex[], budget: number): Hex[] {
+    const taken: Hex[] = [];
+    let spent = 0;
+    for (const step of path) {
+      const cost = TERRAIN_COST[this.terrainAt(step.col, step.row)];
+      if (spent + cost > budget) break;
+      spent += cost;
+      taken.push(step);
+    }
+    return taken;
   }
 
   private hexNeighbors(col: number, row: number): Hex[] {
