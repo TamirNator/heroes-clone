@@ -1,5 +1,7 @@
 # Heroes Clone
 
+[![CI](https://github.com/TamirNator/heroes-clone/actions/workflows/ci.yml/badge.svg)](https://github.com/TamirNator/heroes-clone/actions/workflows/ci.yml)
+
 A small Heroes 3-style turn-based strategy game built with TypeScript, Phaser 3, and Vite. Walk a hero across a hex map, fight enemies in a side-view combat scene, defeat all 3 to win.
 
 ## Gameplay (v0.3)
