@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S5.0 — Combat scene visual stacks
+**Coder:** Replaced placeholder "COMBAT" text with hero/enemy stack layout. Hero (gold Arc r=50, "Hero" label, "HP: 10" label) at x=320; enemy (red Arc r=50, "Enemy" label, "HP: 5" label) at x=960; "VS" text gray center. Constants `HERO_HP=10`, `ENEMY_HP=5`. Return button moved to top-left (120, 50) to clear combat area; still calls `scene.start("MapScene", { defeated: true, heroCol: 4, heroRow: 4 })`. No interaction yet.
+**Verification:** new e2e `e2e/s5-0-combat-layout.spec.ts` — all 3 tests pass (3.8s). PM verified screenshot `test-results/s5-0-combat.png` shows correct layout.
+**Status:** ✅ shipped.
+
+---
+
 ## S4.1 — Defeat outcome (enemy removed, hero takes enemy's hex)
 **Coder:** CombatScene's Return button now passes `{ defeated: true, heroCol: 4, heroRow: 4 }` via `scene.start("MapScene", data)`. MapScene gained `init(data)` lifecycle hook + `initData` field; `create()` reads it to (a) place hero at `(initData.heroCol ?? 0, initData.heroRow ?? 0)` and (b) skip enemy render when `initData.defeated === true`. `enemySprite` field is now optional. Encounter trigger guards on `this.enemySprite !== undefined`.
 **Verification:** new e2e `e2e/s4-1-defeat.spec.ts` — both s4-0 and s4-1 tests pass (3.7s total). Screenshot `test-results/s4-1-after-return.png` confirms: hero at hex (4,4), enemy absent, Moves: 5.
