@@ -32,6 +32,7 @@ export class MapScene extends Phaser.Scene {
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
   private enemySprites: Map<string, Phaser.GameObjects.Arc> = new Map();
+  private gameWon = false;
   private initData: {
     defeatedCol?: number;
     defeatedRow?: number;
@@ -54,6 +55,7 @@ export class MapScene extends Phaser.Scene {
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.isAnimating = false;
     this.enemySprites = new Map();
+    this.gameWon = false;
 
     // registry persists across scene.start calls — use it to track defeated enemies game-wide.
     if (!this.registry.has("defeatedEnemies")) {
@@ -114,6 +116,11 @@ export class MapScene extends Phaser.Scene {
       this.enemySprites.set(`${enemy.col},${enemy.row}`, sprite);
     }
 
+    const defeated = this.registry.get("defeatedEnemies") as Set<string>;
+    if (defeated.size >= ENEMIES.length) {
+      this.renderWinOverlay();
+    }
+
     this.movesText = this.add
       .text(1280 - 20, 20, `Moves: ${this.remainingMoves}`, {
         fontSize: "20px",
@@ -144,7 +151,29 @@ export class MapScene extends Phaser.Scene {
       this.endTurnBtn.setFillStyle(DEFAULT_FILL);
     });
     this.endTurnBtn.on("pointerdown", () => {
-      if (!this.isAnimating) this.endTurn();
+      if (!this.isAnimating && !this.gameWon) this.endTurn();
+    });
+  }
+
+  private renderWinOverlay(): void {
+    this.gameWon = true;
+
+    this.add.rectangle(640, 360, 1280, 720, 0x000000).setAlpha(0.7).setDepth(100);
+    this.add.text(640, 300, "GAME WON!", { fontSize: "64px", color: "#44cc44" }).setOrigin(0.5).setDepth(101);
+    this.add.text(640, 370, "All enemies defeated", { fontSize: "24px", color: "#ffffff" }).setOrigin(0.5).setDepth(101);
+
+    const newGameBtn = this.add
+      .rectangle(640, 460, 200, 50, 0x2a3a4a)
+      .setStrokeStyle(2, 0x44cc44)
+      .setDepth(101)
+      .setInteractive();
+    this.add.text(640, 460, "New Game", { fontSize: "22px", color: "#44cc44" }).setOrigin(0.5).setDepth(102);
+
+    newGameBtn.on("pointerover", () => newGameBtn.setFillStyle(0x4a6a8a));
+    newGameBtn.on("pointerout", () => newGameBtn.setFillStyle(0x2a3a4a));
+    newGameBtn.on("pointerdown", () => {
+      (this.registry.get("defeatedEnemies") as Set<string>).clear();
+      this.scene.start("MapScene", {});
     });
   }
 
@@ -158,7 +187,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   private onHexClicked(col: number, row: number): void {
-    if (this.isAnimating || this.remainingMoves === 0) return;
+    if (this.isAnimating || this.remainingMoves === 0 || this.gameWon) return;
     if (col === this.heroCol && row === this.heroRow) return;
 
     const path = this.bfsPath(this.heroCol, this.heroRow, col, row);

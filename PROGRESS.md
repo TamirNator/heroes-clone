@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S6.1 — Game-won state + New Game replay
+**Coder:** Added `gameWon` field, `renderWinOverlay()` method. Win detection in `create()` after enemy render: if `defeatedEnemies.size >= ENEMIES.length`, render overlay. Overlay = translucent black Rectangle (alpha 0.7, depth 100) + "GAME WON!" 64px green + "All enemies defeated" subtitle + "New Game" button (200×50, green stroke, hover fill swap). New Game click clears the registry's defeated set + `scene.start("MapScene", {})`. **Bug fix bundled:** `scene.start("MapScene")` with no second argument was carrying the prior `init` data; explicit `{}` argument forces clean state. `onHexClicked` and End Turn `pointerdown` short-circuit when `gameWon` is true.
+**Verification:** new e2e `e2e/s6-1-game-won.spec.ts` defeats all 3 enemies (mostly via registry pre-population for speed; final defeat via real click flow), verifies overlay, clicks New Game, verifies fresh state. All 6 e2e tests pass (11.3s). PM verified screenshots.
+**Note:** mid-task the CODER hit a per-account quota limit ("usage resets at 3:50pm Asia/Jerusalem"). Resolved by retry; no work lost.
+**Status:** ✅ shipped.
+
+---
+
 ## S6.0 — Multiple enemies on map (with persistent defeat tracking)
 **Coder:** Replaced single `ENEMY_COL/ROW` constants with `ENEMIES` array of 3 fixed positions: `(4,4)`, `(10,7)`, `(15,11)`. Defeated tracking moved to `Phaser.Game.registry` (game-wide, persists across `scene.start`): lazy-init `Set<string>` keyed by `"col,row"`. Replaced `enemySprite` field with `enemySprites: Map<string, Arc>`. Render loop skips defeated keys. Encounter trigger checks `enemySprites.has(heroKey)` and passes `{ enemyCol, enemyRow }` to CombatScene. CombatScene's `init(data)` stores enemy coords; `showOutcome(true)` (and Return) pass `{ defeatedCol, defeatedRow, heroCol, heroRow }`. MapScene's `init` adds defeated key to registry. On DEFEAT: full reset but registry preserves (so already-defeated enemies stay gone).
 **Test adjustments:** existing s4-0/s4-1/s5-0/s5-1 tests updated to use `enemySprites.get('4,4')` instead of `enemySprite`.
