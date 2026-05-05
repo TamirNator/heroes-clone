@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S8.0 — Terrain types + impassable tiles (v0.4 kickoff)
+**Coder:** Three terrain types: **grass** `0x2a3a4a` (default, walkable, 282 tiles), **forest** `0x2d4a2d` (walkable, 10 tiles in 3 patches), **water** `0x1a3a5a` (impassable, 8 tiles in 2 barriers — diagonal upper-middle + vertical right side). `TERRAIN_OVERRIDES` map keyed by `"col,row"` provides per-tile lookup with grass fallback. Hover variants per terrain. `terrainAt(col,row)` + `isPassable(col,row)` helpers; `bfsPath()` filters neighbors by `isPassable` AND short-circuits if destination is impassable. Same BFS used by hero pathfinding and enemy AI, so neither can route through water.
+**Verification:** new e2e `e2e/s8-0-terrain.spec.ts` (multiple sub-tests for terrain rendering, hero water-block, enemy AI water-block, pathing-around). All 18 e2e tests pass (20.1s). PM verified screenshot shows all 3 terrain types and barriers.
+**Status:** ✅ shipped.
+
+---
+
 ## S7.2 — HP bars in CombatScene
 **Coder:** Each combatant has a 160×14 px bar centered below its circle and above the "HP: N" text. Background `0x222222` fill + `0x555555` stroke. Fill rectangle anchored `setOrigin(0, 0.5)` at left edge so it shrinks rightward; hero green `0x44cc44`, enemy red `0xcc4444`. Width formula `Math.max(0, currentHp/maxHp * 160)`. Updated in `onAttack()` (after enemy damage applied) and `enemyAttack()` (after hero damage applied). Hero maxHp = `HERO_HP` (10); enemy maxHp from `initData.enemyHp`. Bar Rectangles created AFTER buttons so the existing button-finding code in tests (`rects[0]`=Return, `rects[1]`=Attack) still works.
 **Verification:** new e2e `e2e/s7-2-hp-bars.spec.ts` confirms initial widths (160/160) and post-attack widths (Troll 6/8 → 120, Hero 8/10 → 128). All 14 e2e tests pass (19.2s). PM verified screenshot showing bars at correct widths + bonus floating "-2" text from S6.3 captured mid-fade.

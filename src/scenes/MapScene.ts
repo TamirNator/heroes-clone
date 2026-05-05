@@ -3,12 +3,30 @@ import Phaser from "phaser";
 const COLS = 20;
 const ROWS = 15;
 const DEFAULT_FILL = 0x2a3a4a;
-const HOVER_FILL = 0x4a6a8a;
 const STROKE_COLOR = 0x556677;
 const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
 const SAVE_KEY = "heroes-clone:save";
+
+type Terrain = "grass" | "forest" | "water";
+const TERRAIN_FILL: Record<Terrain, number> = {
+  grass: 0x2a3a4a,
+  forest: 0x2d4a2d,
+  water: 0x1a3a5a,
+};
+const TERRAIN_HOVER: Record<Terrain, number> = {
+  grass: 0x4a6a8a,
+  forest: 0x4a6a4a,
+  water: 0x3a5a7a,
+};
+const TERRAIN_OVERRIDES: Record<string, Terrain> = {
+  "6,3": "water", "7,3": "water", "6,4": "water", "7,4": "water",
+  "13,5": "water", "13,6": "water", "13,7": "water", "13,8": "water",
+  "2,2": "forest", "3,2": "forest", "2,3": "forest",
+  "8,9": "forest", "9,9": "forest", "8,10": "forest", "9,10": "forest",
+  "16,3": "forest", "17,3": "forest", "16,4": "forest",
+};
 
 type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number };
 const ENEMIES: readonly Enemy[] = [
@@ -125,7 +143,11 @@ export class MapScene extends Phaser.Scene {
       for (let col = 0; col < COLS; col++) {
         const { x: cx, y: cy } = this.hexCenter(col, row);
 
-        const poly = this.add.polygon(cx, cy, points, DEFAULT_FILL);
+        const terrain = this.terrainAt(col, row);
+        const fill = TERRAIN_FILL[terrain];
+        const hoverFill = TERRAIN_HOVER[terrain];
+
+        const poly = this.add.polygon(cx, cy, points, fill);
         poly.setOrigin(0);
         poly.setStrokeStyle(1.5, STROKE_COLOR);
         poly.setInteractive(
@@ -133,8 +155,8 @@ export class MapScene extends Phaser.Scene {
           Phaser.Geom.Polygon.Contains
         );
 
-        poly.on("pointerover", () => poly.setFillStyle(HOVER_FILL));
-        poly.on("pointerout", () => poly.setFillStyle(DEFAULT_FILL));
+        poly.on("pointerover", () => poly.setFillStyle(hoverFill));
+        poly.on("pointerout", () => poly.setFillStyle(fill));
         poly.on("pointerdown", () => this.onHexClicked(col, row));
       }
     }
@@ -184,7 +206,7 @@ export class MapScene extends Phaser.Scene {
       .setDepth(21);
 
     this.endTurnBtn.on("pointerover", () => {
-      if (!this.isAnimating) this.endTurnBtn.setFillStyle(HOVER_FILL);
+      if (!this.isAnimating) this.endTurnBtn.setFillStyle(TERRAIN_HOVER.grass);
     });
     this.endTurnBtn.on("pointerout", () => {
       this.endTurnBtn.setFillStyle(DEFAULT_FILL);
@@ -210,7 +232,7 @@ export class MapScene extends Phaser.Scene {
       .setDepth(21);
 
     this.resetBtn.on("pointerover", () => {
-      if (!this.isAnimating && !this.gameWon) this.resetBtn.setFillStyle(HOVER_FILL);
+      if (!this.isAnimating && !this.gameWon) this.resetBtn.setFillStyle(TERRAIN_HOVER.grass);
     });
     this.resetBtn.on("pointerout", () => {
       this.resetBtn.setFillStyle(DEFAULT_FILL);
@@ -397,12 +419,21 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
+  private terrainAt(col: number, row: number): Terrain {
+    return TERRAIN_OVERRIDES[`${col},${row}`] ?? "grass";
+  }
+
+  private isPassable(col: number, row: number): boolean {
+    return this.terrainAt(col, row) !== "water";
+  }
+
   private bfsPath(
     fromCol: number,
     fromRow: number,
     toCol: number,
     toRow: number
   ): Hex[] {
+    if (!this.isPassable(toCol, toRow)) return [];
     const key = (c: number, r: number): string => `${c},${r}`;
     const visited = new Set<string>();
     const prev = new Map<string, Hex>();
@@ -423,7 +454,7 @@ export class MapScene extends Phaser.Scene {
       }
       for (const nb of this.hexNeighbors(current.col, current.row)) {
         const nk = key(nb.col, nb.row);
-        if (!visited.has(nk)) {
+        if (!visited.has(nk) && this.isPassable(nb.col, nb.row)) {
           visited.add(nk);
           prev.set(nk, current);
           queue.push(nb);
