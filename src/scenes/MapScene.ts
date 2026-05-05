@@ -8,8 +8,13 @@ const STROKE_COLOR = 0x556677;
 const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
-const ENEMY_COL = 4;
-const ENEMY_ROW = 4;
+
+type Enemy = { col: number; row: number };
+const ENEMIES: readonly Enemy[] = [
+  { col: 4, row: 4 },
+  { col: 10, row: 7 },
+  { col: 15, row: 11 },
+];
 
 type Hex = { col: number; row: number };
 
@@ -26,14 +31,19 @@ export class MapScene extends Phaser.Scene {
   private isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
-  private enemySprite?: Phaser.GameObjects.Arc;
-  private initData: { defeated?: boolean; heroCol?: number; heroRow?: number } = {};
+  private enemySprites: Map<string, Phaser.GameObjects.Arc> = new Map();
+  private initData: {
+    defeatedCol?: number;
+    defeatedRow?: number;
+    heroCol?: number;
+    heroRow?: number;
+  } = {};
 
   constructor() {
     super("MapScene");
   }
 
-  init(data: { defeated?: boolean; heroCol?: number; heroRow?: number }): void {
+  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number }): void {
     this.initData = data ?? {};
   }
 
@@ -43,6 +53,17 @@ export class MapScene extends Phaser.Scene {
     this.heroRow = this.initData.heroRow ?? 0;
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.isAnimating = false;
+    this.enemySprites = new Map();
+
+    // registry persists across scene.start calls — use it to track defeated enemies game-wide.
+    if (!this.registry.has("defeatedEnemies")) {
+      this.registry.set("defeatedEnemies", new Set<string>());
+    }
+    if (this.initData.defeatedCol !== undefined && this.initData.defeatedRow !== undefined) {
+      (this.registry.get("defeatedEnemies") as Set<string>).add(
+        `${this.initData.defeatedCol},${this.initData.defeatedRow}`
+      );
+    }
 
     const margin = 20;
     const rFromW = (1280 - 2 * margin) / ((COLS + 0.5) * Math.sqrt(3));
@@ -57,10 +78,6 @@ export class MapScene extends Phaser.Scene {
     this.startX = (1280 - gridW) / 2 + this.colStep / 2;
     this.startY = (720 - gridH) / 2 + this.hexR;
 
-    // Points relative to (0,0); polygon is positioned at (cx,cy) with setOrigin(0) so
-    // _displayOriginX/Y = 0 and vertices render at exactly (cx+px, cy+py) — visual center = (cx,cy).
-    // Without setOrigin(0), default origin 0.5 makes _displayOriginX=hexW/2, _displayOriginY=r,
-    // which shifts the visual center to (cx-hexW/2, cy-r), offsetting it from the hero.
     const points = this.hexPointsRelative(this.hexR);
 
     for (let row = 0; row < ROWS; row++) {
@@ -82,20 +99,19 @@ export class MapScene extends Phaser.Scene {
     }
 
     const { x, y } = this.hexCenter(this.heroCol, this.heroRow);
-
     this.heroSprite = this.add
       .circle(x, y, this.hexR * 0.45, HERO_FILL)
       .setStrokeStyle(2, HERO_STROKE)
       .setDepth(10);
 
-    if (!this.initData.defeated) {
-      const { x: ex, y: ey } = this.hexCenter(ENEMY_COL, ENEMY_ROW);
-      this.enemySprite = this.add
+    for (const enemy of ENEMIES) {
+      if (this.isDefeated(enemy.col, enemy.row)) continue;
+      const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
+      const sprite = this.add
         .circle(ex, ey, this.hexR * 0.45, 0xcc4444)
         .setStrokeStyle(2, 0x222222)
         .setDepth(10);
-    } else {
-      this.enemySprite = undefined;
+      this.enemySprites.set(`${enemy.col},${enemy.row}`, sprite);
     }
 
     this.movesText = this.add
@@ -106,7 +122,6 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
-    // Button anchored top-right: setOrigin(1,0) so x=1260 is the right edge, y=50 is the top.
     this.endTurnBtn = this.add
       .rectangle(1280 - 20, 50, 120, 36, DEFAULT_FILL)
       .setStrokeStyle(2, 0xffcc44)
@@ -114,7 +129,6 @@ export class MapScene extends Phaser.Scene {
       .setDepth(20)
       .setInteractive();
 
-    // Text centered inside the rectangle: x = right_edge - half_width, y = top + half_height
     this.add
       .text(1280 - 20 - 60, 50 + 18, "End Turn", {
         fontSize: "18px",
@@ -132,6 +146,10 @@ export class MapScene extends Phaser.Scene {
     this.endTurnBtn.on("pointerdown", () => {
       if (!this.isAnimating) this.endTurn();
     });
+  }
+
+  private isDefeated(col: number, row: number): boolean {
+    return (this.registry.get("defeatedEnemies") as Set<string>).has(`${col},${row}`);
   }
 
   private endTurn(): void {
@@ -156,8 +174,9 @@ export class MapScene extends Phaser.Scene {
     if (index >= steps.length) {
       this.isAnimating = false;
       this.endTurnBtn.setAlpha(1);
-      if (this.enemySprite !== undefined && this.heroCol === ENEMY_COL && this.heroRow === ENEMY_ROW) {
-        this.scene.start("CombatScene");
+      const key = `${this.heroCol},${this.heroRow}`;
+      if (this.enemySprites.has(key)) {
+        this.scene.start("CombatScene", { enemyCol: this.heroCol, enemyRow: this.heroRow });
       }
       return;
     }
@@ -232,7 +251,6 @@ export class MapScene extends Phaser.Scene {
     };
   }
 
-  // Points around (0,0) in local space; used with setOrigin(0) so visual center == polygon position.
   private hexPointsRelative(r: number): number[] {
     const pts: number[] = [];
     for (let i = 0; i < 6; i++) {

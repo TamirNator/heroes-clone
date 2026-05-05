@@ -31,7 +31,7 @@ test.describe('S5.0 — combat scene visual layout', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      const sprite = map.enemySprite;
+      const sprite = map.enemySprites.get('4,4');
       const cvs: HTMLCanvasElement = g.canvas;
       const rect = cvs.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;

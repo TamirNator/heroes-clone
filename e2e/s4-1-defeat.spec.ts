@@ -15,11 +15,11 @@ test.describe('S4.1 — defeat outcome', () => {
 
     await page.screenshot({ path: 'test-results/s4-1-initial.png' });
 
-    // Verify enemy sprite exists at start
+    // Verify enemy at (4,4) exists at start
     const enemyExistsInitially = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map.enemySprite !== undefined;
+      return map.enemySprites.has('4,4');
     });
     expect(enemyExistsInitially).toBe(true);
 
@@ -41,7 +41,7 @@ test.describe('S4.1 — defeat outcome', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      const sprite = map.enemySprite;
+      const sprite = map.enemySprites.get('4,4');
       const canvas: HTMLCanvasElement = g.canvas;
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;
@@ -59,7 +59,7 @@ test.describe('S4.1 — defeat outcome', () => {
       return g.scene.getScenes(true).some((s: any) => s.scene.key === 'CombatScene');
     }, { timeout: 10000 });
 
-    // Click Return button
+    // Click Return button (added first, so rects[0])
     const returnPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat: any = g.scene.getScene('CombatScene');
@@ -83,13 +83,17 @@ test.describe('S4.1 — defeat outcome', () => {
 
     await page.screenshot({ path: 'test-results/s4-1-after-return.png' });
 
-    // Enemy must be gone
-    const enemyGone = await page.evaluate(() => {
+    // Enemy at (4,4) must be gone; 2 others remain
+    const afterState = await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map.enemySprite === undefined;
+      return {
+        enemyGone: !map.enemySprites.has('4,4'),
+        remainingCount: map.enemySprites.size,
+      };
     });
-    expect(enemyGone).toBe(true);
+    expect(afterState.enemyGone).toBe(true);
+    expect(afterState.remainingCount).toBe(2);
 
     // Hero must be at hex (4,4)
     const heroPos = await page.evaluate(() => {

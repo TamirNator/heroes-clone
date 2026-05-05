@@ -12,9 +12,14 @@ export class CombatScene extends Phaser.Scene {
   private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
   private attackBtn!: Phaser.GameObjects.Rectangle;
+  private initData: { enemyCol?: number; enemyRow?: number } = {};
 
   constructor() {
     super("CombatScene");
+  }
+
+  init(data: { enemyCol?: number; enemyRow?: number }): void {
+    this.initData = data ?? {};
   }
 
   create(): void {
@@ -37,7 +42,7 @@ export class CombatScene extends Phaser.Scene {
     // VS
     this.add.text(640, 360, "VS", { fontSize: "32px", color: "#888888" }).setOrigin(0.5);
 
-    // Return button — top-left
+    // Return button — top-left, kept for debug/safety; passes enemy coords back so defeat is recorded.
     const returnBtn = this.add
       .rectangle(120, 50, 160, 40, 0x2a3a4a)
       .setStrokeStyle(2, 0xffcc44)
@@ -48,7 +53,12 @@ export class CombatScene extends Phaser.Scene {
 
     returnBtn.on("pointerover", () => returnBtn.setFillStyle(0x4a6a8a));
     returnBtn.on("pointerout", () => returnBtn.setFillStyle(0x2a3a4a));
-    returnBtn.on("pointerdown", () => this.scene.start("MapScene", { defeated: true, heroCol: 4, heroRow: 4 }));
+    returnBtn.on("pointerdown", () => this.scene.start("MapScene", {
+      defeatedCol: this.initData.enemyCol,
+      defeatedRow: this.initData.enemyRow,
+      heroCol: this.initData.enemyCol,
+      heroRow: this.initData.enemyRow,
+    }));
 
     // Attack button — below hero stack
     this.attackBtn = this.add
@@ -97,7 +107,12 @@ export class CombatScene extends Phaser.Scene {
 
     this.time.delayedCall(1500, () => {
       if (victory) {
-        this.scene.start("MapScene", { defeated: true, heroCol: 4, heroRow: 4 });
+        this.scene.start("MapScene", {
+          defeatedCol: this.initData.enemyCol,
+          defeatedRow: this.initData.enemyRow,
+          heroCol: this.initData.enemyCol,
+          heroRow: this.initData.enemyRow,
+        });
       } else {
         this.scene.start("MapScene");
       }

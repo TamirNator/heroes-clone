@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S6.0 — Multiple enemies on map (with persistent defeat tracking)
+**Coder:** Replaced single `ENEMY_COL/ROW` constants with `ENEMIES` array of 3 fixed positions: `(4,4)`, `(10,7)`, `(15,11)`. Defeated tracking moved to `Phaser.Game.registry` (game-wide, persists across `scene.start`): lazy-init `Set<string>` keyed by `"col,row"`. Replaced `enemySprite` field with `enemySprites: Map<string, Arc>`. Render loop skips defeated keys. Encounter trigger checks `enemySprites.has(heroKey)` and passes `{ enemyCol, enemyRow }` to CombatScene. CombatScene's `init(data)` stores enemy coords; `showOutcome(true)` (and Return) pass `{ defeatedCol, defeatedRow, heroCol, heroRow }`. MapScene's `init` adds defeated key to registry. On DEFEAT: full reset but registry preserves (so already-defeated enemies stay gone).
+**Test adjustments:** existing s4-0/s4-1/s5-0/s5-1 tests updated to use `enemySprites.get('4,4')` instead of `enemySprite`.
+**Verification:** new e2e `e2e/s6-0-multi-enemies.spec.ts` exercises 2 sequential defeats; all 5 e2e tests pass (10.1s). PM verified screenshots: initial (3 red dots), after-first-defeat (2 red dots, hero at (4,4)), after-second-defeat (1 red dot).
+**Status:** ✅ shipped.
+
+---
+
 ## S5.1 — Combat attack loop with victory/defeat
 **Coder:** Added `HERO_DAMAGE=2`, `ENEMY_DAMAGE=1` constants. State fields `heroHp`, `enemyHp`, `combatOver`, plus refs `heroHpText`, `enemyHpText`, `attackBtn`. Attack button (Rectangle 140×40) at (320, 530) below hero stack. `onAttack()`: subtract HERO_DAMAGE from enemyHp (clamped to 0), update label; if enemy dies → dim button + `showOutcome(true)`; else schedule `enemyAttack()` after 400ms. `enemyAttack()`: subtract ENEMY_DAMAGE from heroHp; if hero dies → `showOutcome(false)`. `showOutcome()`: render large outcome text (VICTORY! green or DEFEAT red) at (640, 600), then after 1500ms `scene.start("MapScene", ...)` — victory passes `{defeated:true, heroCol:4, heroRow:4}`, defeat passes nothing (full reset).
 **Deterministic combat:** Round 1: enemy 5→3, hero 10→9. Round 2: enemy 3→1, hero 9→8. Round 3: enemy 1→0 → VICTORY (no retaliation). Hero ends with 8 HP.

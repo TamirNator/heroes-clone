@@ -39,8 +39,7 @@ test.describe('S4.0 — encounter trigger', () => {
     const enemyPos = await page.evaluate(() => {
       const g = (window as any).__game;
       const map: any = g.scene.getScene('MapScene');
-      // hexCenter is private; enemySprite.x/y equals the enemy hex center (set via hexCenter())
-      const sprite = map.enemySprite;
+      const sprite = map.enemySprites.get('4,4');
       const canvas: HTMLCanvasElement = g.canvas;
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;
@@ -68,7 +67,7 @@ test.describe('S4.0 — encounter trigger', () => {
       const g = (window as any).__game;
       const combat: any = g.scene.getScene('CombatScene');
       const rects = combat.children.list.filter((c: any) => c.type === 'Rectangle');
-      const btn = rects[0]; // the only rectangle in CombatScene is the Return button
+      const btn = rects[0]; // Return button is added first (y=50); Attack button is second (y=530)
       const canvas: HTMLCanvasElement = g.canvas;
       const rect = canvas.getBoundingClientRect();
       const scaleX = rect.width / g.config.width;
