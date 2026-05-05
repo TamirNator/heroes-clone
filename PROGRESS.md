@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S7.2 — HP bars in CombatScene
+**Coder:** Each combatant has a 160×14 px bar centered below its circle and above the "HP: N" text. Background `0x222222` fill + `0x555555` stroke. Fill rectangle anchored `setOrigin(0, 0.5)` at left edge so it shrinks rightward; hero green `0x44cc44`, enemy red `0xcc4444`. Width formula `Math.max(0, currentHp/maxHp * 160)`. Updated in `onAttack()` (after enemy damage applied) and `enemyAttack()` (after hero damage applied). Hero maxHp = `HERO_HP` (10); enemy maxHp from `initData.enemyHp`. Bar Rectangles created AFTER buttons so the existing button-finding code in tests (`rects[0]`=Return, `rects[1]`=Attack) still works.
+**Verification:** new e2e `e2e/s7-2-hp-bars.spec.ts` confirms initial widths (160/160) and post-attack widths (Troll 6/8 → 120, Hero 8/10 → 128). All 14 e2e tests pass (19.2s). PM verified screenshot showing bars at correct widths + bonus floating "-2" text from S6.3 captured mid-fade.
+**Status:** ✅ shipped.
+
+---
+
 ## S7.1 — Save/load progress to localStorage
 **Coder:** Save shape `{ defeated: string[], heroCol, heroRow, remainingMoves }` written to `localStorage["heroes-clone:save"]`. Save triggers: post-hero movement, post-enemy turn, post-combat return, New Game (clear), Reset (clear). Load on `MapScene.create()` when there's no scene-transition `initData`. New "Reset" button (Rectangle 100×30 at top-right below End Turn, red stroke `0xcc4444` to signal destructive). Disabled while animating or game-won. Try/catch around all `localStorage` calls (private mode safety).
 **Verification:** new e2e `e2e/s7-1-save-load.spec.ts` covers (a) defeat → reload → state restored, (b) Reset button → all enemies back, hero at (0,0), localStorage cleared. All 13 e2e tests pass (19.0s). PM verified screenshots: after-reload (2 enemies remain, hero at (4,4)), after-reset (clean map).

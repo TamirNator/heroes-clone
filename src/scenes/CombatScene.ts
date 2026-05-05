@@ -4,15 +4,22 @@ const HERO_HP = 10;
 const ENEMY_HP_DEFAULT = 5;
 const HERO_DAMAGE_MIN = 1;
 const HERO_DAMAGE_MAX = 3;
+const BAR_WIDTH = 160;
+const BAR_HEIGHT = 14;
+const BAR_Y = 425;
 
 export class CombatScene extends Phaser.Scene {
   private heroHp = HERO_HP;
   private enemyHp = ENEMY_HP_DEFAULT;
+  private heroMaxHp = HERO_HP;
+  private enemyMaxHp = ENEMY_HP_DEFAULT;
   private enemyDamageMin = 1;
   private enemyDamageMax = 1;
   private combatOver = false;
   private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
+  private heroBarFill!: Phaser.GameObjects.Rectangle;
+  private enemyBarFill!: Phaser.GameObjects.Rectangle;
   private attackBtn!: Phaser.GameObjects.Rectangle;
   initData: {
     enemyCol?: number;
@@ -49,7 +56,9 @@ export class CombatScene extends Phaser.Scene {
 
   create(): void {
     this.heroHp = HERO_HP;
+    this.heroMaxHp = HERO_HP;
     this.enemyHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
+    this.enemyMaxHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
     this.enemyDamageMin = this.initData.enemyDamageMin ?? 1;
     this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
@@ -61,17 +70,17 @@ export class CombatScene extends Phaser.Scene {
     // Hero stack (left)
     this.add.text(320, 280, "Hero", { fontSize: "20px", color: "#ffcc44" }).setOrigin(0.5);
     this.add.circle(320, 360, 50, 0xffcc44).setStrokeStyle(2, 0x222222);
-    this.heroHpText = this.add.text(320, 440, `HP: ${this.heroHp}`, { fontSize: "24px", color: "#ffcc44" }).setOrigin(0.5);
+    this.heroHpText = this.add.text(320, 455, `HP: ${this.heroHp}`, { fontSize: "24px", color: "#ffcc44" }).setOrigin(0.5);
 
     // Enemy stack (right)
     this.add.text(960, 280, this.initData.enemyName ?? "Enemy", { fontSize: "20px", color: "#cc4444" }).setOrigin(0.5);
     this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
-    this.enemyHpText = this.add.text(960, 440, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" }).setOrigin(0.5);
+    this.enemyHpText = this.add.text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" }).setOrigin(0.5);
 
     // VS
     this.add.text(640, 360, "VS", { fontSize: "32px", color: "#888888" }).setOrigin(0.5);
 
-    // Return button — top-left, kept for debug/safety; passes enemy coords back so defeat is recorded.
+    // Return button — rects[0]; top-left; passes enemy coords back so defeat is recorded.
     const returnBtn = this.add
       .rectangle(120, 50, 160, 40, 0x2a3a4a)
       .setStrokeStyle(2, 0xffcc44)
@@ -89,7 +98,7 @@ export class CombatScene extends Phaser.Scene {
       heroRow: this.initData.enemyRow,
     }));
 
-    // Attack button — below hero stack
+    // Attack button — rects[1]; below hero stack.
     this.attackBtn = this.add
       .rectangle(320, 530, 140, 40, 0x2a3a4a)
       .setStrokeStyle(2, 0xffcc44)
@@ -101,6 +110,21 @@ export class CombatScene extends Phaser.Scene {
     this.attackBtn.on("pointerover", () => this.attackBtn.setFillStyle(0x4a6a8a));
     this.attackBtn.on("pointerout", () => this.attackBtn.setFillStyle(0x2a3a4a));
     this.attackBtn.on("pointerdown", () => this.onAttack());
+
+    // HP bars — added after buttons so rects[0/1] remain Return/Attack for existing tests.
+    // Hero bar: background then fill (rects[2], rects[3])
+    this.add.rectangle(320, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x222222)
+      .setStrokeStyle(1, 0x555555)
+      .setOrigin(0.5);
+    this.heroBarFill = this.add.rectangle(320 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x44cc44)
+      .setOrigin(0, 0.5);
+
+    // Enemy bar: background then fill (rects[4], rects[5])
+    this.add.rectangle(960, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x222222)
+      .setStrokeStyle(1, 0x555555)
+      .setOrigin(0.5);
+    this.enemyBarFill = this.add.rectangle(960 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0xcc4444)
+      .setOrigin(0, 0.5);
   }
 
   private spawnDamageText(x: number, y: number, amount: number): void {
@@ -114,6 +138,7 @@ export class CombatScene extends Phaser.Scene {
     const dmg = this.rollHeroDamage();
     this.enemyHp = Math.max(0, this.enemyHp - dmg);
     this.enemyHpText.setText(`HP: ${this.enemyHp}`);
+    this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
     this.spawnDamageText(960, 400, dmg);
 
     if (this.enemyHp <= 0) {
@@ -129,6 +154,7 @@ export class CombatScene extends Phaser.Scene {
     const dmg = this.rollEnemyDamage();
     this.heroHp = Math.max(0, this.heroHp - dmg);
     this.heroHpText.setText(`HP: ${this.heroHp}`);
+    this.heroBarFill.displayWidth = Math.max(0, (this.heroHp / this.heroMaxHp) * BAR_WIDTH);
     this.spawnDamageText(320, 400, dmg);
 
     if (this.heroHp <= 0) {
