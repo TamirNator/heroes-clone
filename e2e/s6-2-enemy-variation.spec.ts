@@ -73,7 +73,7 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');
 
-    // Goblin at (4,4): HP 3, damage 1
+    // Goblin at (4,4): HP 3, damageMin 1, damageMax 1
     await enterCombat(page, 4, 3, '4,4');
 
     const goblinData = await page.evaluate(() => {
@@ -85,7 +85,8 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
       return {
         enemyName: combat.initData.enemyName as string,
         enemyHp: combat.initData.enemyHp as number,
-        enemyDamage: combat.initData.enemyDamage as number,
+        enemyDamageMin: combat.initData.enemyDamageMin as number,
+        enemyDamageMax: combat.initData.enemyDamageMax as number,
         hasHpLabel: texts.some(t => t.includes('HP: 3')),
         hasNameLabel: texts.some(t => t.includes('Goblin')),
       };
@@ -93,14 +94,15 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
 
     expect(goblinData.enemyName).toBe('Goblin');
     expect(goblinData.enemyHp).toBe(3);
-    expect(goblinData.enemyDamage).toBe(1);
+    expect(goblinData.enemyDamageMin).toBe(1);
+    expect(goblinData.enemyDamageMax).toBe(1);
     expect(goblinData.hasHpLabel).toBe(true);
     expect(goblinData.hasNameLabel).toBe(true);
 
     await page.screenshot({ path: 'test-results/s6-2-goblin.png' });
     await clickReturn(page);
 
-    // Orc at (10,7): HP 5, damage 1
+    // Orc at (10,7): HP 5, damageMin 1, damageMax 2
     await enterCombat(page, 10, 6, '10,7');
 
     const orcData = await page.evaluate(() => {
@@ -112,7 +114,8 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
       return {
         enemyName: combat.initData.enemyName as string,
         enemyHp: combat.initData.enemyHp as number,
-        enemyDamage: combat.initData.enemyDamage as number,
+        enemyDamageMin: combat.initData.enemyDamageMin as number,
+        enemyDamageMax: combat.initData.enemyDamageMax as number,
         hasHpLabel: texts.some(t => t.includes('HP: 5')),
         hasNameLabel: texts.some(t => t.includes('Orc')),
       };
@@ -120,14 +123,15 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
 
     expect(orcData.enemyName).toBe('Orc');
     expect(orcData.enemyHp).toBe(5);
-    expect(orcData.enemyDamage).toBe(1);
+    expect(orcData.enemyDamageMin).toBe(1);
+    expect(orcData.enemyDamageMax).toBe(2);
     expect(orcData.hasHpLabel).toBe(true);
     expect(orcData.hasNameLabel).toBe(true);
 
     await page.screenshot({ path: 'test-results/s6-2-orc.png' });
     await clickReturn(page);
 
-    // Troll at (15,11): HP 8, damage 2
+    // Troll at (15,11): HP 8, damageMin 2, damageMax 3
     await enterCombat(page, 15, 10, '15,11');
 
     const trollData = await page.evaluate(() => {
@@ -139,7 +143,8 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
       return {
         enemyName: combat.initData.enemyName as string,
         enemyHp: combat.initData.enemyHp as number,
-        enemyDamage: combat.initData.enemyDamage as number,
+        enemyDamageMin: combat.initData.enemyDamageMin as number,
+        enemyDamageMax: combat.initData.enemyDamageMax as number,
         hasHpLabel: texts.some(t => t.includes('HP: 8')),
         hasNameLabel: texts.some(t => t.includes('Troll')),
       };
@@ -147,7 +152,8 @@ test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
 
     expect(trollData.enemyName).toBe('Troll');
     expect(trollData.enemyHp).toBe(8);
-    expect(trollData.enemyDamage).toBe(2);
+    expect(trollData.enemyDamageMin).toBe(2);
+    expect(trollData.enemyDamageMax).toBe(3);
     expect(trollData.hasHpLabel).toBe(true);
     expect(trollData.hasNameLabel).toBe(true);
 

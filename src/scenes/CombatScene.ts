@@ -2,31 +2,55 @@ import Phaser from "phaser";
 
 const HERO_HP = 10;
 const ENEMY_HP_DEFAULT = 5;
-const HERO_DAMAGE = 2;
+const HERO_DAMAGE_MIN = 1;
+const HERO_DAMAGE_MAX = 3;
 
 export class CombatScene extends Phaser.Scene {
   private heroHp = HERO_HP;
   private enemyHp = ENEMY_HP_DEFAULT;
-  private enemyDamage = 1;
+  private enemyDamageMin = 1;
+  private enemyDamageMax = 1;
   private combatOver = false;
   private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
   private attackBtn!: Phaser.GameObjects.Rectangle;
-  initData: { enemyCol?: number; enemyRow?: number; enemyName?: string; enemyHp?: number; enemyDamage?: number } = {};
+  initData: {
+    enemyCol?: number;
+    enemyRow?: number;
+    enemyName?: string;
+    enemyHp?: number;
+    enemyDamageMin?: number;
+    enemyDamageMax?: number;
+  } = {};
+
+  public rollHeroDamage: () => number = () =>
+    Phaser.Math.Between(HERO_DAMAGE_MIN, HERO_DAMAGE_MAX);
+  public rollEnemyDamage: () => number = () =>
+    Phaser.Math.Between(this.enemyDamageMin, this.enemyDamageMax);
 
   constructor() {
     super("CombatScene");
   }
 
-  init(data: { enemyCol?: number; enemyRow?: number; enemyName?: string; enemyHp?: number; enemyDamage?: number }): void {
+  init(data: {
+    enemyCol?: number;
+    enemyRow?: number;
+    enemyName?: string;
+    enemyHp?: number;
+    enemyDamageMin?: number;
+    enemyDamageMax?: number;
+  }): void {
     this.initData = data ?? {};
   }
 
   create(): void {
     this.heroHp = HERO_HP;
     this.enemyHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
-    this.enemyDamage = this.initData.enemyDamage ?? 1;
+    this.enemyDamageMin = this.initData.enemyDamageMin ?? 1;
+    this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
+    this.rollHeroDamage = () => Phaser.Math.Between(HERO_DAMAGE_MIN, HERO_DAMAGE_MAX);
+    this.rollEnemyDamage = () => Phaser.Math.Between(this.enemyDamageMin, this.enemyDamageMax);
 
     this.cameras.main.setBackgroundColor("#1a0a0a");
 
@@ -75,11 +99,18 @@ export class CombatScene extends Phaser.Scene {
     this.attackBtn.on("pointerdown", () => this.onAttack());
   }
 
+  private spawnDamageText(x: number, y: number, amount: number): void {
+    const text = this.add.text(x, y, `-${amount}`, { fontSize: "28px", color: "#cc4444" }).setOrigin(0.5).setDepth(50);
+    this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
+  }
+
   private onAttack(): void {
     if (this.combatOver) return;
 
-    this.enemyHp = Math.max(0, this.enemyHp - HERO_DAMAGE);
+    const dmg = this.rollHeroDamage();
+    this.enemyHp = Math.max(0, this.enemyHp - dmg);
     this.enemyHpText.setText(`HP: ${this.enemyHp}`);
+    this.spawnDamageText(960, 400, dmg);
 
     if (this.enemyHp <= 0) {
       this.combatOver = true;
@@ -91,8 +122,10 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private enemyAttack(): void {
-    this.heroHp = Math.max(0, this.heroHp - this.enemyDamage);
+    const dmg = this.rollEnemyDamage();
+    this.heroHp = Math.max(0, this.heroHp - dmg);
     this.heroHpText.setText(`HP: ${this.heroHp}`);
+    this.spawnDamageText(320, 400, dmg);
 
     if (this.heroHp <= 0) {
       this.combatOver = true;

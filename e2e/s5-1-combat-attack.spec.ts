@@ -46,6 +46,14 @@ test.describe('S5.1 — combat attack loop', () => {
       return g.scene.getScenes(true).some((s: any) => s.scene.key === 'CombatScene');
     }, { timeout: 10000 });
 
+    // Pin rolls: hero always deals 2 (Goblin HP 3 → 2 hits), Goblin always deals 1
+    await page.evaluate(() => {
+      const g = (window as any).__game;
+      const combat = g.scene.getScene('CombatScene') as any;
+      combat.rollHeroDamage = () => 2;
+      combat.rollEnemyDamage = () => 1;
+    });
+
     // Compute Attack button viewport coords (game coords 320, 530)
     const attackPos = await page.evaluate(() => {
       const g = (window as any).__game;

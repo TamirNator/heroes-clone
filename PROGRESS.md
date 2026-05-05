@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S6.3 — Random damage rolls + floating damage text
+**Coder:** Replaced single `damage` field with `damageMin`/`damageMax` per enemy. Hero rolls 1–3, Goblin 1–1, Orc 1–2, Troll 2–3. CombatScene exposes public injectable RNG fields (`rollHeroDamage`, `rollEnemyDamage`) so e2e tests can pin to deterministic values via `page.evaluate`. Added floating damage text — `-N` rendered at the hit stack's coords, tweened up 40px and faded over 600ms, then destroyed.
+**Test updates:** s5-1, s6-0, s6-1 now inject deterministic rolls (hero=2, enemy=1) after waiting for CombatScene; existing click counts unchanged. s6-2 asserts on `damageMin/Max` instead of `damage`. New `e2e/s6-3-random-damage.spec.ts` runs 100× rolls in-page to verify variance, plus a pinned-rolls case (hero=3, enemy=2 vs Troll → VICTORY in 3 hits, hero ends at 6 HP).
+**Verification:** all 9 e2e tests pass (13.0s).
+**Status:** ✅ shipped.
+
+---
+
 ## S6.2 — Enemy variation (different stats per enemy)
 **Coder:** Extended `Enemy` type with `name/hp/damage`. Three enemies: **Goblin** (4,4) HP 3 dmg 1, **Orc** (10,7) HP 5 dmg 1, **Troll** (15,11) HP 8 dmg 2. MapScene's encounter trigger looks up the matching enemy and passes full stats to CombatScene. CombatScene's `initData` extended with `enemyName/enemyHp/enemyDamage`. Stack label uses `enemyName`, HP label uses `enemyHp`, retaliation damage uses `enemyDamage` field (replaces removed constant `ENEMY_DAMAGE`). Hero unchanged (HP 10, damage 2).
 **Difficulty curve (in given order):** Goblin → 2 hits, hero ends at 9. Orc → 3 hits, hero ends at 7. Troll → 4 hits, hero ends at 1. Tight but winnable.

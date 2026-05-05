@@ -47,6 +47,14 @@ async function defeatEnemy(page: any, enemyKey: string, attackCount: number) {
     return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
   });
 
+  // Pin rolls so attack counts are deterministic (hero=2, enemy=1)
+  await page.evaluate(() => {
+    const g = (window as any).__game;
+    const combat = g.scene.getScene('CombatScene') as any;
+    combat.rollHeroDamage = () => 2;
+    combat.rollEnemyDamage = () => 1;
+  });
+
   for (let i = 0; i < attackCount; i++) {
     await page.mouse.click(attackPos.x, attackPos.y);
     await page.waitForTimeout(600);

@@ -35,6 +35,14 @@ async function defeatEnemyViaAttack(page: any, enemyKey: string) {
   await page.mouse.click(pos.x, pos.y);
   await waitForScene(page, 'CombatScene');
 
+  // Pin rolls: hero=2 (Troll HP 8 → 4 hits), enemy capped at min so hero survives
+  await page.evaluate(() => {
+    const g = (window as any).__game;
+    const combat = g.scene.getScene('CombatScene') as any;
+    combat.rollHeroDamage = () => 2;
+    combat.rollEnemyDamage = () => 2;
+  });
+
   const attackPos = await page.evaluate(() => {
     const g = (window as any).__game;
     const cvs: HTMLCanvasElement = g.canvas;

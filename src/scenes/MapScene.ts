@@ -9,11 +9,11 @@ const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
 
-type Enemy = { col: number; row: number; name: string; hp: number; damage: number };
+type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number };
 const ENEMIES: readonly Enemy[] = [
-  { col: 4, row: 4, name: "Goblin", hp: 3, damage: 1 },
-  { col: 10, row: 7, name: "Orc", hp: 5, damage: 1 },
-  { col: 15, row: 11, name: "Troll", hp: 8, damage: 2 },
+  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1 },
+  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2 },
+  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3 },
 ];
 
 type Hex = { col: number; row: number };
@@ -211,7 +211,8 @@ export class MapScene extends Phaser.Scene {
           enemyRow: enemy.row,
           enemyName: enemy.name,
           enemyHp: enemy.hp,
-          enemyDamage: enemy.damage,
+          enemyDamageMin: enemy.damageMin,
+          enemyDamageMax: enemy.damageMax,
         });
       }
       return;
