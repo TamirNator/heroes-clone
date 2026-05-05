@@ -8,6 +8,7 @@ const STROKE_COLOR = 0x556677;
 const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
+const SAVE_KEY = "heroes-clone:save";
 
 type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number };
 const ENEMIES: readonly Enemy[] = [
@@ -25,6 +26,13 @@ type LiveEnemy = {
   sprite: Phaser.GameObjects.Arc;
 };
 
+type SaveData = {
+  defeated: string[];
+  heroCol: number;
+  heroRow: number;
+  remainingMoves: number;
+};
+
 export class MapScene extends Phaser.Scene {
   private heroCol = 0;
   private heroRow = 0;
@@ -38,6 +46,7 @@ export class MapScene extends Phaser.Scene {
   isAnimating = false;
   private movesText!: Phaser.GameObjects.Text;
   private endTurnBtn!: Phaser.GameObjects.Rectangle;
+  private resetBtn!: Phaser.GameObjects.Rectangle;
   liveEnemies: LiveEnemy[] = [];
   private gameWon = false;
   private initData: {
@@ -56,22 +65,45 @@ export class MapScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Phaser reuses the same scene instance on scene.start(); field initializers don't re-run.
-    this.heroCol = this.initData.heroCol ?? 0;
-    this.heroRow = this.initData.heroRow ?? 0;
-    this.remainingMoves = MOVEMENT_PER_TURN;
     this.isAnimating = false;
     this.liveEnemies = [];
     this.gameWon = false;
 
-    // registry persists across scene.start calls — use it to track defeated enemies game-wide.
+    // Ensure registry exists.
     if (!this.registry.has("defeatedEnemies")) {
       this.registry.set("defeatedEnemies", new Set<string>());
     }
-    if (this.initData.defeatedCol !== undefined && this.initData.defeatedRow !== undefined) {
-      (this.registry.get("defeatedEnemies") as Set<string>).add(
-        `${this.initData.defeatedCol},${this.initData.defeatedRow}`
-      );
+
+    // Detect whether we arrived here from a scene transition (post-combat data) or a fresh/reset start.
+    const isSceneTransition = this.initData.heroCol !== undefined || this.initData.defeatedCol !== undefined;
+
+    if (isSceneTransition) {
+      this.heroCol = this.initData.heroCol ?? 0;
+      this.heroRow = this.initData.heroRow ?? 0;
+      this.remainingMoves = MOVEMENT_PER_TURN;
+      if (this.initData.defeatedCol !== undefined && this.initData.defeatedRow !== undefined) {
+        (this.registry.get("defeatedEnemies") as Set<string>).add(
+          `${this.initData.defeatedCol},${this.initData.defeatedRow}`
+        );
+      }
+      this.saveProgress();
+    } else {
+      // Fresh page load or post-Reset/NewGame (save is already cleared).
+      const save = this.loadProgress();
+      if (save) {
+        this.heroCol = save.heroCol;
+        this.heroRow = save.heroRow;
+        this.remainingMoves = save.remainingMoves;
+        const defeatedSet = this.registry.get("defeatedEnemies") as Set<string>;
+        defeatedSet.clear();
+        for (const key of save.defeated) {
+          defeatedSet.add(key);
+        }
+      } else {
+        this.heroCol = 0;
+        this.heroRow = 0;
+        this.remainingMoves = MOVEMENT_PER_TURN;
+      }
     }
 
     const margin = 20;
@@ -160,6 +192,36 @@ export class MapScene extends Phaser.Scene {
     this.endTurnBtn.on("pointerdown", () => {
       if (!this.isAnimating && !this.gameWon) this.endTurn();
     });
+
+    // Reset button — red-stroked, destructive action
+    this.resetBtn = this.add
+      .rectangle(1280 - 20, 110, 100, 30, DEFAULT_FILL)
+      .setStrokeStyle(2, 0xcc4444)
+      .setOrigin(1, 0)
+      .setDepth(20)
+      .setInteractive();
+
+    this.add
+      .text(1280 - 20 - 50, 110 + 15, "Reset", {
+        fontSize: "14px",
+        color: "#cc4444",
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(21);
+
+    this.resetBtn.on("pointerover", () => {
+      if (!this.isAnimating && !this.gameWon) this.resetBtn.setFillStyle(HOVER_FILL);
+    });
+    this.resetBtn.on("pointerout", () => {
+      this.resetBtn.setFillStyle(DEFAULT_FILL);
+    });
+    this.resetBtn.on("pointerdown", () => {
+      if (!this.isAnimating && !this.gameWon) {
+        this.clearProgress();
+        (this.registry.get("defeatedEnemies") as Set<string>).clear();
+        this.scene.start("MapScene", {});
+      }
+    });
   }
 
   private renderWinOverlay(): void {
@@ -179,6 +241,7 @@ export class MapScene extends Phaser.Scene {
     newGameBtn.on("pointerover", () => newGameBtn.setFillStyle(0x4a6a8a));
     newGameBtn.on("pointerout", () => newGameBtn.setFillStyle(0x2a3a4a));
     newGameBtn.on("pointerdown", () => {
+      this.clearProgress();
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
       this.scene.start("MapScene", {});
     });
@@ -186,6 +249,39 @@ export class MapScene extends Phaser.Scene {
 
   private isDefeated(col: number, row: number): boolean {
     return (this.registry.get("defeatedEnemies") as Set<string>).has(`${col},${row}`);
+  }
+
+  private saveProgress(): void {
+    const defeatedSet = this.registry.get("defeatedEnemies") as Set<string>;
+    const save: SaveData = {
+      defeated: Array.from(defeatedSet),
+      heroCol: this.heroCol,
+      heroRow: this.heroRow,
+      remainingMoves: this.remainingMoves,
+    };
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    } catch (_e) {
+      // localStorage unavailable (private mode, etc.) — fail silent
+    }
+  }
+
+  private loadProgress(): SaveData | null {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as SaveData;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  private clearProgress(): void {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch (_e) {
+      // ignore
+    }
   }
 
   private endTurn(): void {
@@ -204,6 +300,7 @@ export class MapScene extends Phaser.Scene {
     if (index >= this.liveEnemies.length) {
       this.isAnimating = false;
       this.endTurnBtn.setAlpha(1);
+      this.saveProgress();
       return;
     }
 
@@ -277,6 +374,8 @@ export class MapScene extends Phaser.Scene {
           enemyDamageMin: le.data.damageMin,
           enemyDamageMax: le.data.damageMax,
         });
+      } else {
+        this.saveProgress();
       }
       return;
     }

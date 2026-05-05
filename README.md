@@ -2,7 +2,7 @@
 
 A small Heroes 3-style turn-based strategy game built with TypeScript, Phaser 3, and Vite. Walk a hero across a hex map, fight enemies in a side-view combat scene, defeat all 3 to win.
 
-## Gameplay (v0.2)
+## Gameplay (v0.3)
 
 - **Hex map** — 20×15 pointy-top hex grid; hover to highlight tiles.
 - **Hero** — gold circle, starts at top-left. Click any reachable hex to walk there.
@@ -13,9 +13,12 @@ A small Heroes 3-style turn-based strategy game built with TypeScript, Phaser 3,
   - **Troll** at (15, 11) — HP 8, damage 2
 - **Combat** — walking onto an enemy hex flips to a side-view combat scene. Click `Attack` to deal damage; the enemy retaliates each round until one side dies.
 - **Outcomes** — `VICTORY!` removes the enemy from the map permanently; the hero takes the enemy's hex on return. `DEFEAT` resets the run (defeated enemies stay defeated thanks to the Phaser game registry).
+- **Enemy AI** — every End Turn, each living enemy BFS-walks one tile toward the hero. If an enemy reaches the hero's hex, combat starts immediately.
+- **Random damage** — Hero rolls 1–3, Goblin 1, Orc 1–2, Troll 2–3. Floating `-N` text appears on each hit.
 - **Win condition** — defeat all three enemies to see `GAME WON!`. The `New Game` button clears progress and starts over.
+- **Persistence** — defeated enemies + hero position are saved to `localStorage`. Refresh the page and your progress is intact. The `Reset` button (top-right, red border) wipes the save.
 
-The difficulty curve is tight: fighting in order (Goblin → Orc → Troll) leaves the hero at HP 1 after the Troll. Out-of-order fights are likely fatal.
+The difficulty curve is tight: fighting in order (Goblin → Orc → Troll) leaves the hero at HP 1 after the Troll. Out-of-order fights are likely fatal. With AI now chasing you, dawdling is dangerous.
 
 ## Stack
 
@@ -55,6 +58,9 @@ Seven Playwright e2e tests cover every interactive flow:
 | `e2e/s6-0-multi-enemies.spec.ts` | Three enemies render; sequential defeats persist |
 | `e2e/s6-1-game-won.spec.ts` | All-enemies-defeated triggers `GAME WON!` overlay; New Game resets |
 | `e2e/s6-2-enemy-variation.spec.ts` | Each enemy passes its own name/HP/damage to the combat scene |
+| `e2e/s6-3-random-damage.spec.ts` | Damage rolls vary; pinned rolls give predictable victories |
+| `e2e/s7-0-enemy-ai.spec.ts` | Enemies move toward hero on End Turn; AI can reach hero → trigger combat |
+| `e2e/s7-1-save-load.spec.ts` | Defeats persist to localStorage across page reload; Reset clears |
 
 The tests inject `window.__game` (only in dev) to introspect Phaser scene state.
 
@@ -78,10 +84,9 @@ See `PROGRESS.md` for the slice-by-slice history (what each step added, what bug
 
 ## Possible next steps
 
-- **Random damage** — replace deterministic damage with rolled ranges (e.g. Hero 1–3, Orc 1–2). Tests would need a seedable RNG.
 - **HP bars** — visual bar instead of/alongside the `HP: N` text.
-- **Damage numbers** — floating `-2` text that fades up when a stack takes damage.
-- **More enemies / map variety** — random enemy placement, different terrain types, impassable tiles.
-- **Enemy AI on the map** — enemies move toward the hero each turn.
-- **Towns / treasures** — pickup tiles that grant gold or HP.
-- **Save/load** — persist registry to `localStorage` so progress survives reload.
+- **Map variety** — random enemy placement, different terrain types, impassable tiles, biome colors.
+- **More enemy types** — orc archer (ranged), troll shaman (heals), goblin pack (multi-stack).
+- **Towns / treasures** — pickup tiles that grant gold or HP, towns to recruit units.
+- **Multi-stack combat** — multiple unit types per side instead of single hero vs single enemy.
+- **Hero progression** — leveling, equipment, spells.

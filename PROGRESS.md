@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S7.1 — Save/load progress to localStorage
+**Coder:** Save shape `{ defeated: string[], heroCol, heroRow, remainingMoves }` written to `localStorage["heroes-clone:save"]`. Save triggers: post-hero movement, post-enemy turn, post-combat return, New Game (clear), Reset (clear). Load on `MapScene.create()` when there's no scene-transition `initData`. New "Reset" button (Rectangle 100×30 at top-right below End Turn, red stroke `0xcc4444` to signal destructive). Disabled while animating or game-won. Try/catch around all `localStorage` calls (private mode safety).
+**Verification:** new e2e `e2e/s7-1-save-load.spec.ts` covers (a) defeat → reload → state restored, (b) Reset button → all enemies back, hero at (0,0), localStorage cleared. All 13 e2e tests pass (19.0s). PM verified screenshots: after-reload (2 enemies remain, hero at (4,4)), after-reset (clean map).
+**Status:** ✅ shipped — game state survives page reload.
+
+---
+
 ## S7.0 — Enemy AI movement on End Turn
 **Coder:** Refactored `enemySprites: Map` → `liveEnemies: LiveEnemy[]` where `LiveEnemy = { col, row, data, sprite }`. The mutable `col`/`row` track current position (changes on AI move); `data` holds spawn info (used as the registry key for defeat tracking). Added `runEnemyTurn()` triggered by End Turn click after `remainingMoves` refresh: each living enemy in turn does BFS to hero, takes one tile step, animates 150ms. If an enemy lands on hero's hex, immediate `scene.start("CombatScene", ...)` with `originalCol/Row` (spawn) AND `enemyCol/Row` (current). CombatScene's victory/return paths use `originalCol ?? enemyCol` for the defeat registry key — so a defeated wandering enemy stays defeated even though it left its spawn.
 **Test updates:** all 8 prior tests updated for `liveEnemies` shape (sprite lookups via `find`, size checks via `length`). `s7-0-enemy-ai.spec.ts` adds two tests: (a) verify enemy moves after End Turn, (b) End Turn 8–10× until Goblin reaches hero → CombatScene auto-triggers.
