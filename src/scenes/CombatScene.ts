@@ -30,6 +30,7 @@ export class CombatScene extends Phaser.Scene {
     enemyHp?: number;
     enemyDamageMin?: number;
     enemyDamageMax?: number;
+    heroHp?: number;
   } = {};
 
   public rollHeroDamage: () => number = () =>
@@ -50,12 +51,13 @@ export class CombatScene extends Phaser.Scene {
     enemyHp?: number;
     enemyDamageMin?: number;
     enemyDamageMax?: number;
+    heroHp?: number;
   }): void {
     this.initData = data ?? {};
   }
 
   create(): void {
-    this.heroHp = HERO_HP;
+    this.heroHp = this.initData.heroHp ?? HERO_HP;
     this.heroMaxHp = HERO_HP;
     this.enemyHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
     this.enemyMaxHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
@@ -96,6 +98,7 @@ export class CombatScene extends Phaser.Scene {
       defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
       heroCol: this.initData.enemyCol,
       heroRow: this.initData.enemyRow,
+      heroHp: this.heroHp,
     }));
 
     // Attack button — rects[1]; below hero stack.
@@ -176,9 +179,10 @@ export class CombatScene extends Phaser.Scene {
           defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
           heroCol: this.initData.enemyCol,
           heroRow: this.initData.enemyRow,
+          heroHp: this.heroHp,
         });
       } else {
-        this.scene.start("MapScene");
+        this.scene.start("MapScene", { heroHp: HERO_HP });
       }
     });
   }

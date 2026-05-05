@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S9.1 — Persistent hero HP between combats
+**Coder:** Hero HP lives in `registry["heroHp"]`, lazy-init to 10. New top-right HP label below Reset, format `"HP: N/10"`, color-coded green ≥60% / yellow 30-59% / red <30%. Both scene-start calls to CombatScene now pass `heroHp`. CombatScene reads `initData.heroHp ?? HERO_HP`. Victory/Defeat/Return all pass `heroHp` back. Defeat sends `HERO_HP` (full reset). Save/load extended with `heroHp` field. Reset + New Game also reset HP to max.
+**Why this matters:** before this slice, every combat started hero at full 10 HP — so the README's claim of a "tight difficulty curve" was actually false. Now fighting in order really does carry damage forward.
+**Verification:** new e2e `e2e/s9-1-persistent-hp.spec.ts` covers full → reduced after fight → reduced further after second fight → reset after Reset. All 23 tests pass (25.2s). Screenshot shows hero on map with `HP: 7/10` after defeating two enemies.
+**Status:** ✅ shipped.
+
+---
+
 ## S9.0 — Fast enemy type (Wolves, v0.5 kickoff)
 **Coder:** New `Wolf` type at (5,11) and (12,2). Stats: HP=4, dmg 1-2, **`movesPerTurn: 2`** (vs 1 for slow enemies). Visually orange-red `0xff8844` to distinguish from dark-red `0xcc4444` slows. `Enemy` type extended with `movesPerTurn`. `runEnemyStep(i)` now delegates to `runEnemyMultiStep(i, stepsRemaining)` which recursively does N hops per enemy, recomputing Dijkstra each step, checking for hero collision after each (combat triggers if hit).
 **Test updates:** s4-1, s6-0, s6-1, s7-1 had counts updated for 5 enemies instead of 3. New e2e `s9-0-fast-enemy.spec.ts` asserts Wolf moves 2 BFS hops vs Goblin's 1 after one End Turn.

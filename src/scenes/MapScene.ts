@@ -8,6 +8,10 @@ const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
 const SAVE_KEY = "heroes-clone:save";
+const HERO_HP = 10;
+const HP_COLOR_HIGH = "#44cc44";
+const HP_COLOR_MID = "#cccc44";
+const HP_COLOR_LOW = "#cc4444";
 
 type Terrain = "grass" | "forest" | "water";
 const TERRAIN_FILL: Record<Terrain, number> = {
@@ -56,6 +60,7 @@ type SaveData = {
   heroCol: number;
   heroRow: number;
   remainingMoves: number;
+  heroHp: number;
 };
 
 export class MapScene extends Phaser.Scene {
@@ -80,13 +85,14 @@ export class MapScene extends Phaser.Scene {
     defeatedRow?: number;
     heroCol?: number;
     heroRow?: number;
+    heroHp?: number;
   } = {};
 
   constructor() {
     super("MapScene");
   }
 
-  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number }): void {
+  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number }): void {
     this.initData = data ?? {};
   }
 
@@ -98,6 +104,9 @@ export class MapScene extends Phaser.Scene {
     // Ensure registry exists.
     if (!this.registry.has("defeatedEnemies")) {
       this.registry.set("defeatedEnemies", new Set<string>());
+    }
+    if (!this.registry.has("heroHp")) {
+      this.registry.set("heroHp", HERO_HP);
     }
 
     // Detect whether we arrived here from a scene transition (post-combat data) or a fresh/reset start.
@@ -112,9 +121,13 @@ export class MapScene extends Phaser.Scene {
           `${this.initData.defeatedCol},${this.initData.defeatedRow}`
         );
       }
+      if (this.initData.heroHp !== undefined) {
+        this.registry.set("heroHp", Math.max(1, this.initData.heroHp));
+      }
       this.saveProgress();
     } else {
       // Fresh page load or post-Reset/NewGame (save is already cleared).
+      // Also handles defeat (heroHp: HERO_HP passed, no position data).
       const save = this.loadProgress();
       if (save) {
         this.heroCol = save.heroCol;
@@ -125,10 +138,18 @@ export class MapScene extends Phaser.Scene {
         for (const key of save.defeated) {
           defeatedSet.add(key);
         }
+        if (save.heroHp !== undefined) {
+          this.registry.set("heroHp", save.heroHp);
+        }
       } else {
         this.heroCol = 0;
         this.heroRow = 0;
         this.remainingMoves = MOVEMENT_PER_TURN;
+      }
+      // Defeat passes heroHp: HERO_HP without position data — override and persist.
+      if (this.initData.heroHp !== undefined) {
+        this.registry.set("heroHp", this.initData.heroHp);
+        this.saveProgress();
       }
     }
 
@@ -249,10 +270,19 @@ export class MapScene extends Phaser.Scene {
     this.resetBtn.on("pointerdown", () => {
       if (!this.isAnimating && !this.gameWon) {
         this.clearProgress();
+        this.registry.set("heroHp", HERO_HP);
         (this.registry.get("defeatedEnemies") as Set<string>).clear();
         this.scene.start("MapScene", {});
       }
     });
+
+    // Hero HP label
+    const hp = this.getHeroHp();
+    const hpColor = this.hpColor(hp);
+    this.add
+      .text(1280 - 20, 175, `HP: ${hp}/${HERO_HP}`, { fontSize: "18px", color: hpColor })
+      .setOrigin(1, 0)
+      .setDepth(20);
   }
 
   private renderWinOverlay(): void {
@@ -273,6 +303,7 @@ export class MapScene extends Phaser.Scene {
     newGameBtn.on("pointerout", () => newGameBtn.setFillStyle(0x2a3a4a));
     newGameBtn.on("pointerdown", () => {
       this.clearProgress();
+      this.registry.set("heroHp", HERO_HP);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
       this.scene.start("MapScene", {});
     });
@@ -289,6 +320,7 @@ export class MapScene extends Phaser.Scene {
       heroCol: this.heroCol,
       heroRow: this.heroRow,
       remainingMoves: this.remainingMoves,
+      heroHp: this.getHeroHp(),
     };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
@@ -376,6 +408,7 @@ export class MapScene extends Phaser.Scene {
             enemyHp: enemy.data.hp,
             enemyDamageMin: enemy.data.damageMin,
             enemyDamageMax: enemy.data.damageMax,
+            heroHp: this.getHeroHp(),
           });
           return;
         }
@@ -414,6 +447,7 @@ export class MapScene extends Phaser.Scene {
           enemyHp: le.data.hp,
           enemyDamageMin: le.data.damageMin,
           enemyDamageMax: le.data.damageMax,
+          heroHp: this.getHeroHp(),
         });
       } else {
         this.saveProgress();
@@ -436,6 +470,17 @@ export class MapScene extends Phaser.Scene {
         this.animatePath(steps, index + 1);
       },
     });
+  }
+
+  private getHeroHp(): number {
+    return this.registry.get("heroHp") as number;
+  }
+
+  private hpColor(hp: number): string {
+    const pct = hp / HERO_HP;
+    if (pct >= 0.6) return HP_COLOR_HIGH;
+    if (pct >= 0.3) return HP_COLOR_MID;
+    return HP_COLOR_LOW;
   }
 
   private terrainAt(col: number, row: number): Terrain {
