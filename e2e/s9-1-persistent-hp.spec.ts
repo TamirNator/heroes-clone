@@ -187,15 +187,15 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
 
     await page.screenshot({ path: 'test-results/s9-1-after-two-fights.png' });
 
-    // Step 6: after two fights, HP should be 7
+    // Step 6: after two fights, HP should be 10/13 (leveled up: 7 + delta 3 from level 2)
     const afterOrcLabel = await getHpLabelText(page);
-    expect(afterOrcLabel).toBe('HP: 7/10');
+    expect(afterOrcLabel).toBe('HP: 10/13');
 
     const afterOrcRegistryHp = await page.evaluate(() => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(afterOrcRegistryHp).toBe(7);
+    expect(afterOrcRegistryHp).toBe(10);
 
     // Step 7: click Reset, HP should return to 10
     const canvas = page.locator('canvas');

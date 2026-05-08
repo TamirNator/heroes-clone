@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S10.0 — Hero XP + levels (v0.6 kickoff)
+**Coder:** 4-level table: L1 (10HP, 1-3dmg), L2 (13, 2-4), L3 (17, 2-5), L4 (22, 3-6). Thresholds [0, 5, 12, 25] XP. Total XP from all 6 enemies = 23 → reaches L3. `Enemy.xpReward` added (Goblin 2, Orc 4, Troll 7, Wolf 3, Archer 4). `registry["heroXp"]` and `["heroLevel"]` join `heroHp` in persistent state. CombatScene victory passes `xpGained` to MapScene; init block applies XP, loops level-ups (heals delta on each), persists. CombatScene reads `heroDamageMin/Max` from initData (passed from level table) so damage scales with level. HP label format `HP: N/M` uses dynamic max. New XP label below: `Lvl N • XP: x/threshold` (or `MAX` at L4). Reset/New Game also reset XP and Level.
+**Test updates:** `s9-1-persistent-hp.spec.ts` — Goblin+Orc defeats now trigger level-up so HP shows `10/13` instead of `7/10`. New `s10-0-progression.spec.ts` covers initial state + XP accumulation + level-up.
+**Verification:** all 27 tests pass (31.4s). PM verified screenshot — `HP: 13/13`, `Lvl 2 • XP: 6/12` visible.
+**Status:** ✅ shipped.
+
+---
+
 ## S9.2 — Ranged enemy (Archer) — closes v0.5
 **Coder:** Sixth enemy `Archer` at (8, 12), HP 3, damage 1-2, `range: 3`. Color `0xcccc44` (yellow-gold). New `bfsDistance` helper for hop-count range check (pure BFS, ignores cost). `runEnemyStep` checks `range !== undefined` and `bfsDistance ≤ range` — if yes, calls `shootHero` instead of moving. `shootHero`: spawns a yellow `Phaser.GameObjects.Line` from archer to hero, tweens alpha 1→0 over 200ms, after 120ms applies 1–2 damage to map-level `registry.heroHp`, updates HP label, spawns floating `-N`. If HP ≤ 0 from a shot: defeat — resets HP + position, scene.start with `heroHp: HERO_HP` (defeated enemies preserved per registry).
 **Test updates:** s4-1, s6-0, s6-1, s7-1, s9-1 enemy counts adjusted from 5 → 6. New `s9-2-archer.spec.ts` covers (a) out-of-range Archer moves toward hero, (b) in-range Archer stays put and damages hero.

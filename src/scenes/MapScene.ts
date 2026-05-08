@@ -13,6 +13,15 @@ const HP_COLOR_HIGH = "#44cc44";
 const HP_COLOR_MID = "#cccc44";
 const HP_COLOR_LOW = "#cc4444";
 
+type LevelStats = { maxHp: number; dmgMin: number; dmgMax: number };
+const LEVELS: LevelStats[] = [
+  { maxHp: 10, dmgMin: 1, dmgMax: 3 },
+  { maxHp: 13, dmgMin: 2, dmgMax: 4 },
+  { maxHp: 17, dmgMin: 2, dmgMax: 5 },
+  { maxHp: 22, dmgMin: 3, dmgMax: 6 },
+];
+const LEVEL_THRESHOLDS = [0, 5, 12, 25];
+
 type Terrain = "grass" | "forest" | "water";
 const TERRAIN_FILL: Record<Terrain, number> = {
   grass: 0x2a3a4a,
@@ -37,14 +46,14 @@ const TERRAIN_COST: Record<Terrain, number> = {
   water: Infinity,
 };
 
-type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number; range?: number };
+type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number; range?: number; xpReward: number };
 const ENEMIES: readonly Enemy[] = [
-  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1, movesPerTurn: 1 },
-  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2, movesPerTurn: 1 },
-  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3, movesPerTurn: 1 },
-  { col: 5, row: 11, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
-  { col: 12, row: 2, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
-  { col: 8, row: 12, name: "Archer", hp: 3, damageMin: 1, damageMax: 2, movesPerTurn: 1, range: 3 },
+  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1, movesPerTurn: 1, xpReward: 2 },
+  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2, movesPerTurn: 1, xpReward: 4 },
+  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3, movesPerTurn: 1, xpReward: 7 },
+  { col: 5, row: 11, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
+  { col: 12, row: 2, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
+  { col: 8, row: 12, name: "Archer", hp: 3, damageMin: 1, damageMax: 2, movesPerTurn: 1, range: 3, xpReward: 4 },
 ];
 
 type Hex = { col: number; row: number };
@@ -62,6 +71,8 @@ type SaveData = {
   heroRow: number;
   remainingMoves: number;
   heroHp: number;
+  heroXp?: number;
+  heroLevel?: number;
 };
 
 export class MapScene extends Phaser.Scene {
@@ -88,13 +99,14 @@ export class MapScene extends Phaser.Scene {
     heroCol?: number;
     heroRow?: number;
     heroHp?: number;
+    xpGained?: number;
   } = {};
 
   constructor() {
     super("MapScene");
   }
 
-  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number }): void {
+  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number; xpGained?: number }): void {
     this.initData = data ?? {};
   }
 
@@ -109,6 +121,12 @@ export class MapScene extends Phaser.Scene {
     }
     if (!this.registry.has("heroHp")) {
       this.registry.set("heroHp", HERO_HP);
+    }
+    if (!this.registry.has("heroXp")) {
+      this.registry.set("heroXp", 0);
+    }
+    if (!this.registry.has("heroLevel")) {
+      this.registry.set("heroLevel", 1);
     }
 
     // Detect whether we arrived here from a scene transition (post-combat data) or a fresh/reset start.
@@ -126,6 +144,21 @@ export class MapScene extends Phaser.Scene {
       if (this.initData.heroHp !== undefined) {
         this.registry.set("heroHp", Math.max(1, this.initData.heroHp));
       }
+      if (this.initData.xpGained !== undefined) {
+        let xp = this.getHeroXp() + this.initData.xpGained;
+        let level = this.getHeroLevel();
+        while (level < LEVELS.length) {
+          const threshold = LEVEL_THRESHOLDS[level];
+          if (threshold === undefined || xp < threshold) break;
+          const oldMaxHp = LEVELS[level - 1]!.maxHp;
+          level++;
+          const newMaxHp = LEVELS[level - 1]!.maxHp;
+          const currentHp = this.registry.get("heroHp") as number;
+          this.registry.set("heroHp", currentHp + (newMaxHp - oldMaxHp));
+        }
+        this.registry.set("heroXp", xp);
+        this.registry.set("heroLevel", level);
+      }
       this.saveProgress();
     } else {
       // Fresh page load or post-Reset/NewGame (save is already cleared).
@@ -142,6 +175,12 @@ export class MapScene extends Phaser.Scene {
         }
         if (save.heroHp !== undefined) {
           this.registry.set("heroHp", save.heroHp);
+        }
+        if (save.heroXp !== undefined) {
+          this.registry.set("heroXp", save.heroXp);
+        }
+        if (save.heroLevel !== undefined) {
+          this.registry.set("heroLevel", save.heroLevel);
         }
       } else {
         this.heroCol = 0;
@@ -273,6 +312,8 @@ export class MapScene extends Phaser.Scene {
       if (!this.isAnimating && !this.gameWon) {
         this.clearProgress();
         this.registry.set("heroHp", HERO_HP);
+        this.registry.set("heroXp", 0);
+        this.registry.set("heroLevel", 1);
         (this.registry.get("defeatedEnemies") as Set<string>).clear();
         this.scene.start("MapScene", {});
       }
@@ -280,9 +321,19 @@ export class MapScene extends Phaser.Scene {
 
     // Hero HP label
     const hp = this.getHeroHp();
-    const hpColor = this.hpColor(hp);
+    const maxHp = this.getHeroMaxHp();
     this.heroHpLabel = this.add
-      .text(1280 - 20, 175, `HP: ${hp}/${HERO_HP}`, { fontSize: "18px", color: hpColor })
+      .text(1280 - 20, 175, `HP: ${hp}/${maxHp}`, { fontSize: "18px", color: this.hpColor(hp) })
+      .setOrigin(1, 0)
+      .setDepth(20);
+
+    // Level + XP label
+    const level = this.getHeroLevel();
+    const xp = this.getHeroXp();
+    const nextThreshold = LEVEL_THRESHOLDS[level];
+    const xpText = nextThreshold !== undefined ? `Lvl ${level} • XP: ${xp}/${nextThreshold}` : `Lvl ${level} • MAX`;
+    this.add
+      .text(1280 - 20, 200, xpText, { fontSize: "14px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
   }
@@ -306,6 +357,8 @@ export class MapScene extends Phaser.Scene {
     newGameBtn.on("pointerdown", () => {
       this.clearProgress();
       this.registry.set("heroHp", HERO_HP);
+      this.registry.set("heroXp", 0);
+      this.registry.set("heroLevel", 1);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
       this.scene.start("MapScene", {});
     });
@@ -323,6 +376,8 @@ export class MapScene extends Phaser.Scene {
       heroRow: this.heroRow,
       remainingMoves: this.remainingMoves,
       heroHp: this.getHeroHp(),
+      heroXp: this.getHeroXp(),
+      heroLevel: this.getHeroLevel(),
     };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
@@ -409,6 +464,7 @@ export class MapScene extends Phaser.Scene {
 
         if (enemy.col === this.heroCol && enemy.row === this.heroRow) {
           this.isAnimating = false;
+          const level = this.getHeroLevel();
           this.scene.start("CombatScene", {
             enemyCol: enemy.col,
             enemyRow: enemy.row,
@@ -419,6 +475,9 @@ export class MapScene extends Phaser.Scene {
             enemyDamageMin: enemy.data.damageMin,
             enemyDamageMax: enemy.data.damageMax,
             heroHp: this.getHeroHp(),
+            heroDamageMin: LEVELS[level - 1]!.dmgMin,
+            heroDamageMax: LEVELS[level - 1]!.dmgMax,
+            xpReward: enemy.data.xpReward,
           });
           return;
         }
@@ -448,6 +507,7 @@ export class MapScene extends Phaser.Scene {
       this.endTurnBtn.setAlpha(1);
       const le = this.liveEnemies.find(e => e.col === this.heroCol && e.row === this.heroRow);
       if (le) {
+        const level = this.getHeroLevel();
         this.scene.start("CombatScene", {
           enemyCol: le.col,
           enemyRow: le.row,
@@ -458,6 +518,9 @@ export class MapScene extends Phaser.Scene {
           enemyDamageMin: le.data.damageMin,
           enemyDamageMax: le.data.damageMax,
           heroHp: this.getHeroHp(),
+          heroDamageMin: LEVELS[level - 1]!.dmgMin,
+          heroDamageMax: LEVELS[level - 1]!.dmgMax,
+          xpReward: le.data.xpReward,
         });
       } else {
         this.saveProgress();
@@ -486,8 +549,20 @@ export class MapScene extends Phaser.Scene {
     return this.registry.get("heroHp") as number;
   }
 
+  private getHeroXp(): number {
+    return (this.registry.get("heroXp") as number | undefined) ?? 0;
+  }
+
+  private getHeroLevel(): number {
+    return (this.registry.get("heroLevel") as number | undefined) ?? 1;
+  }
+
+  private getHeroMaxHp(): number {
+    return LEVELS[this.getHeroLevel() - 1]!.maxHp;
+  }
+
   private hpColor(hp: number): string {
-    const pct = hp / HERO_HP;
+    const pct = hp / this.getHeroMaxHp();
     if (pct >= 0.6) return HP_COLOR_HIGH;
     if (pct >= 0.3) return HP_COLOR_MID;
     return HP_COLOR_LOW;
@@ -596,7 +671,7 @@ export class MapScene extends Phaser.Scene {
       const currentHp = this.getHeroHp();
       const newHp = Math.max(0, currentHp - damage);
       this.registry.set("heroHp", newHp);
-      this.heroHpLabel.setText(`HP: ${newHp}/${HERO_HP}`);
+      this.heroHpLabel.setText(`HP: ${newHp}/${this.getHeroMaxHp()}`);
       this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });
 
       const dmgText = this.add

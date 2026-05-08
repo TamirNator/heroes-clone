@@ -31,6 +31,9 @@ export class CombatScene extends Phaser.Scene {
     enemyDamageMin?: number;
     enemyDamageMax?: number;
     heroHp?: number;
+    heroDamageMin?: number;
+    heroDamageMax?: number;
+    xpReward?: number;
   } = {};
 
   public rollHeroDamage: () => number = () =>
@@ -52,6 +55,9 @@ export class CombatScene extends Phaser.Scene {
     enemyDamageMin?: number;
     enemyDamageMax?: number;
     heroHp?: number;
+    heroDamageMin?: number;
+    heroDamageMax?: number;
+    xpReward?: number;
   }): void {
     this.initData = data ?? {};
   }
@@ -64,7 +70,9 @@ export class CombatScene extends Phaser.Scene {
     this.enemyDamageMin = this.initData.enemyDamageMin ?? 1;
     this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
-    this.rollHeroDamage = () => Phaser.Math.Between(HERO_DAMAGE_MIN, HERO_DAMAGE_MAX);
+    const heroDmgMin = this.initData.heroDamageMin ?? HERO_DAMAGE_MIN;
+    const heroDmgMax = this.initData.heroDamageMax ?? HERO_DAMAGE_MAX;
+    this.rollHeroDamage = () => Phaser.Math.Between(heroDmgMin, heroDmgMax);
     this.rollEnemyDamage = () => Phaser.Math.Between(this.enemyDamageMin, this.enemyDamageMax);
 
     this.cameras.main.setBackgroundColor("#1a0a0a");
@@ -180,6 +188,7 @@ export class CombatScene extends Phaser.Scene {
           heroCol: this.initData.enemyCol,
           heroRow: this.initData.enemyRow,
           heroHp: this.heroHp,
+          xpGained: this.initData.xpReward ?? 0,
         });
       } else {
         this.scene.start("MapScene", { heroHp: HERO_HP });
