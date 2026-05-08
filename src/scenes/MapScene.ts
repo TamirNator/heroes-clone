@@ -37,13 +37,14 @@ const TERRAIN_COST: Record<Terrain, number> = {
   water: Infinity,
 };
 
-type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number };
+type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number; range?: number };
 const ENEMIES: readonly Enemy[] = [
   { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1, movesPerTurn: 1 },
   { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2, movesPerTurn: 1 },
   { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3, movesPerTurn: 1 },
   { col: 5, row: 11, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
   { col: 12, row: 2, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2 },
+  { col: 8, row: 12, name: "Archer", hp: 3, damageMin: 1, damageMax: 2, movesPerTurn: 1, range: 3 },
 ];
 
 type Hex = { col: number; row: number };
@@ -79,6 +80,7 @@ export class MapScene extends Phaser.Scene {
   private resetBtn!: Phaser.GameObjects.Rectangle;
   liveEnemies: LiveEnemy[] = [];
   public lastPath: Hex[] = [];
+  private heroHpLabel!: Phaser.GameObjects.Text;
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -199,7 +201,7 @@ export class MapScene extends Phaser.Scene {
     for (const enemy of ENEMIES) {
       if (this.isDefeated(enemy.col, enemy.row)) continue;
       const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
-      const fillColor = enemy.name === "Wolf" ? 0xff8844 : 0xcc4444;
+      const fillColor = enemy.name === "Wolf" ? 0xff8844 : enemy.name === "Archer" ? 0xcccc44 : 0xcc4444;
       const sprite = this.add
         .circle(ex, ey, this.hexR * 0.45, fillColor)
         .setStrokeStyle(2, 0x222222)
@@ -279,7 +281,7 @@ export class MapScene extends Phaser.Scene {
     // Hero HP label
     const hp = this.getHeroHp();
     const hpColor = this.hpColor(hp);
-    this.add
+    this.heroHpLabel = this.add
       .text(1280 - 20, 175, `HP: ${hp}/${HERO_HP}`, { fontSize: "18px", color: hpColor })
       .setOrigin(1, 0)
       .setDepth(20);
@@ -367,6 +369,14 @@ export class MapScene extends Phaser.Scene {
       return;
     }
     const enemy = this.liveEnemies[index]!;
+    if (enemy.data.range !== undefined) {
+      const d = this.bfsDistance(enemy.col, enemy.row, this.heroCol, this.heroRow);
+      if (d <= enemy.data.range) {
+        this.shootHero(enemy);
+        this.runEnemyStep(index + 1);
+        return;
+      }
+    }
     this.runEnemyMultiStep(index, enemy.data.movesPerTurn);
   }
 
@@ -543,6 +553,66 @@ export class MapScene extends Phaser.Scene {
       taken.push(step);
     }
     return taken;
+  }
+
+  private bfsDistance(fromCol: number, fromRow: number, toCol: number, toRow: number): number {
+    if (fromCol === toCol && fromRow === toRow) return 0;
+    const visited = new Set<string>([`${fromCol},${fromRow}`]);
+    let frontier: Hex[] = [{ col: fromCol, row: fromRow }];
+    let dist = 0;
+    while (frontier.length > 0) {
+      dist++;
+      const next: Hex[] = [];
+      for (const { col, row } of frontier) {
+        for (const nb of this.hexNeighbors(col, row)) {
+          if (nb.col === toCol && nb.row === toRow) return dist;
+          if (!this.isPassable(nb.col, nb.row)) continue;
+          const k = `${nb.col},${nb.row}`;
+          if (!visited.has(k)) {
+            visited.add(k);
+            next.push(nb);
+          }
+        }
+      }
+      frontier = next;
+    }
+    return Infinity;
+  }
+
+  private shootHero(enemy: LiveEnemy): void {
+    const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
+    const { x: hx, y: hy } = this.hexCenter(this.heroCol, this.heroRow);
+
+    const line = this.add
+      .line(0, 0, ex, ey, hx, hy, 0xffff44)
+      .setOrigin(0, 0)
+      .setDepth(50)
+      .setLineWidth(2);
+
+    this.tweens.add({ targets: line, alpha: 0, duration: 200, onComplete: () => line.destroy() });
+
+    this.time.delayedCall(120, () => {
+      const damage = Phaser.Math.Between(enemy.data.damageMin, enemy.data.damageMax ?? enemy.data.damageMin);
+      const currentHp = this.getHeroHp();
+      const newHp = Math.max(0, currentHp - damage);
+      this.registry.set("heroHp", newHp);
+      this.heroHpLabel.setText(`HP: ${newHp}/${HERO_HP}`);
+      this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });
+
+      const dmgText = this.add
+        .text(hx, hy - 30, `-${damage}`, { fontSize: "28px", color: "#cc4444" })
+        .setOrigin(0.5)
+        .setDepth(60);
+      this.tweens.add({ targets: dmgText, y: hy - 60, alpha: 0, duration: 600, onComplete: () => dmgText.destroy() });
+
+      if (newHp <= 0) {
+        this.registry.set("heroHp", HERO_HP);
+        this.heroCol = 0;
+        this.heroRow = 0;
+        this.saveProgress();
+        this.scene.start("MapScene", { heroHp: HERO_HP });
+      }
+    });
   }
 
   private hexNeighbors(col: number, row: number): Hex[] {

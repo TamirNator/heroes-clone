@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S9.2 — Ranged enemy (Archer) — closes v0.5
+**Coder:** Sixth enemy `Archer` at (8, 12), HP 3, damage 1-2, `range: 3`. Color `0xcccc44` (yellow-gold). New `bfsDistance` helper for hop-count range check (pure BFS, ignores cost). `runEnemyStep` checks `range !== undefined` and `bfsDistance ≤ range` — if yes, calls `shootHero` instead of moving. `shootHero`: spawns a yellow `Phaser.GameObjects.Line` from archer to hero, tweens alpha 1→0 over 200ms, after 120ms applies 1–2 damage to map-level `registry.heroHp`, updates HP label, spawns floating `-N`. If HP ≤ 0 from a shot: defeat — resets HP + position, scene.start with `heroHp: HERO_HP` (defeated enemies preserved per registry).
+**Test updates:** s4-1, s6-0, s6-1, s7-1, s9-1 enemy counts adjusted from 5 → 6. New `s9-2-archer.spec.ts` covers (a) out-of-range Archer moves toward hero, (b) in-range Archer stays put and damages hero.
+**Verification:** all 25 tests pass (28.7s).
+**Status:** ✅ shipped — closes v0.5 (more enemy types: 3 melee + 2 fast + 1 ranged).
+
+---
+
 ## S9.1 — Persistent hero HP between combats
 **Coder:** Hero HP lives in `registry["heroHp"]`, lazy-init to 10. New top-right HP label below Reset, format `"HP: N/10"`, color-coded green ≥60% / yellow 30-59% / red <30%. Both scene-start calls to CombatScene now pass `heroHp`. CombatScene reads `initData.heroHp ?? HERO_HP`. Victory/Defeat/Return all pass `heroHp` back. Defeat sends `HERO_HP` (full reset). Save/load extended with `heroHp` field. Reset + New Game also reset HP to max.
 **Why this matters:** before this slice, every combat started hero at full 10 HP — so the README's claim of a "tight difficulty curve" was actually false. Now fighting in order really does carry damage forward.

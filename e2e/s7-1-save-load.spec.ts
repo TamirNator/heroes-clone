@@ -113,7 +113,7 @@ test.describe('S7.1 — save/load progress', () => {
       };
     });
 
-    expect(mapState.enemyCount).toBe(4);
+    expect(mapState.enemyCount).toBe(5);
     expect(mapState.heroCol).toBe(4);
     expect(mapState.heroRow).toBe(4);
   });
@@ -138,7 +138,7 @@ test.describe('S7.1 — save/load progress', () => {
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map?.liveEnemies?.length === 5 && map?.gameWon === false;
+      return map?.liveEnemies?.length === 6 && map?.gameWon === false;
     }, null, { timeout: 5000 });
 
     await page.screenshot({ path: 'test-results/s7-1-after-reset.png' });
@@ -154,7 +154,7 @@ test.describe('S7.1 — save/load progress', () => {
       };
     });
 
-    expect(afterReset.enemyCount).toBe(5);
+    expect(afterReset.enemyCount).toBe(6);
     expect(afterReset.heroCol).toBe(0);
     expect(afterReset.heroRow).toBe(0);
     expect(afterReset.gameWon).toBe(false);

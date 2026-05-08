@@ -204,7 +204,7 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
-      return map?.liveEnemies?.length === 5 && map?.gameWon === false;
+      return map?.liveEnemies?.length === 6 && map?.gameWon === false;
     }, null, { timeout: 5000 });
 
     const afterResetLabel = await getHpLabelText(page);
