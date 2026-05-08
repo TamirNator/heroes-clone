@@ -29,6 +29,12 @@ const POTIONS: readonly Potion[] = [
   { col: 3, row: 10 },
 ];
 
+type Scroll = { col: number; row: number };
+const SCROLLS: readonly Scroll[] = [
+  { col: 12, row: 8 },
+  { col: 5, row: 6 },
+];
+
 type Terrain = "grass" | "forest" | "water";
 const TERRAIN_FILL: Record<Terrain, number> = {
   grass: 0x2a3a4a,
@@ -81,6 +87,7 @@ type SaveData = {
   heroXp?: number;
   heroLevel?: number;
   consumed?: string[];
+  consumedScrolls?: string[];
 };
 
 export class MapScene extends Phaser.Scene {
@@ -103,6 +110,8 @@ export class MapScene extends Phaser.Scene {
   private heroDmgLabel!: Phaser.GameObjects.Text;
   private activeTooltip?: Phaser.GameObjects.Container;
   private potionSprites: Map<string, Phaser.GameObjects.Text> = new Map();
+  private scrollSprites: Map<string, Phaser.GameObjects.Text> = new Map();
+  private heroXpLabel!: Phaser.GameObjects.Text;
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -142,6 +151,9 @@ export class MapScene extends Phaser.Scene {
     if (!this.registry.has("consumedPotions")) {
       this.registry.set("consumedPotions", new Set<string>());
     }
+    if (!this.registry.has("consumedScrolls")) {
+      this.registry.set("consumedScrolls", new Set<string>());
+    }
 
     // Detect whether we arrived here from a scene transition (post-combat data) or a fresh/reset start.
     const isSceneTransition = this.initData.heroCol !== undefined || this.initData.defeatedCol !== undefined;
@@ -159,19 +171,7 @@ export class MapScene extends Phaser.Scene {
         this.registry.set("heroHp", Math.max(1, this.initData.heroHp));
       }
       if (this.initData.xpGained !== undefined) {
-        let xp = this.getHeroXp() + this.initData.xpGained;
-        let level = this.getHeroLevel();
-        while (level < LEVELS.length) {
-          const threshold = LEVEL_THRESHOLDS[level];
-          if (threshold === undefined || xp < threshold) break;
-          const oldMaxHp = LEVELS[level - 1]!.maxHp;
-          level++;
-          const newMaxHp = LEVELS[level - 1]!.maxHp;
-          const currentHp = this.registry.get("heroHp") as number;
-          this.registry.set("heroHp", currentHp + (newMaxHp - oldMaxHp));
-        }
-        this.registry.set("heroXp", xp);
-        this.registry.set("heroLevel", level);
+        this.applyXpGain(this.initData.xpGained);
       }
       this.saveProgress();
     } else {
@@ -201,6 +201,13 @@ export class MapScene extends Phaser.Scene {
           consumedSet.clear();
           for (const key of save.consumed) {
             consumedSet.add(key);
+          }
+        }
+        if (save.consumedScrolls !== undefined) {
+          const scrollConsumedSet = this.consumedScrolls();
+          scrollConsumedSet.clear();
+          for (const key of save.consumedScrolls) {
+            scrollConsumedSet.add(key);
           }
         }
       } else {
@@ -290,6 +297,20 @@ export class MapScene extends Phaser.Scene {
       this.potionSprites.set(`${potion.col},${potion.row}`, sprite);
     }
 
+    // Render scrolls
+    this.scrollSprites = new Map();
+    const consumedScrollSet = this.consumedScrolls();
+    for (const scroll of SCROLLS) {
+      if (consumedScrollSet.has(`${scroll.col},${scroll.row}`)) continue;
+      const { x: cx, y: cy } = this.hexCenter(scroll.col, scroll.row);
+      const sprite = this.add.text(cx, cy, "B", {
+        fontSize: "28px",
+        color: "#4488cc",
+        fontStyle: "bold",
+      }).setOrigin(0.5).setDepth(5);
+      this.scrollSprites.set(`${scroll.col},${scroll.row}`, sprite);
+    }
+
     const defeated = this.registry.get("defeatedEnemies") as Set<string>;
     if (defeated.size >= ENEMIES.length) {
       this.renderWinOverlay();
@@ -358,6 +379,7 @@ export class MapScene extends Phaser.Scene {
         this.registry.set("heroLevel", 1);
         (this.registry.get("defeatedEnemies") as Set<string>).clear();
         this.consumedPotions().clear();
+        this.consumedScrolls().clear();
         this.scene.start("MapScene", {});
       }
     });
@@ -375,7 +397,7 @@ export class MapScene extends Phaser.Scene {
     const xp = this.getHeroXp();
     const nextThreshold = LEVEL_THRESHOLDS[level];
     const xpText = nextThreshold !== undefined ? `Lvl ${level} • XP: ${xp}/${nextThreshold}` : `Lvl ${level} • MAX`;
-    this.add
+    this.heroXpLabel = this.add
       .text(1280 - 20, 200, xpText, { fontSize: "14px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
@@ -411,6 +433,7 @@ export class MapScene extends Phaser.Scene {
       this.registry.set("heroLevel", 1);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
       this.consumedPotions().clear();
+      this.consumedScrolls().clear();
       this.scene.start("MapScene", {});
     });
   }
@@ -430,6 +453,7 @@ export class MapScene extends Phaser.Scene {
       heroXp: this.getHeroXp(),
       heroLevel: this.getHeroLevel(),
       consumed: Array.from(this.consumedPotions()),
+      consumedScrolls: Array.from(this.consumedScrolls()),
     };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
@@ -596,6 +620,10 @@ export class MapScene extends Phaser.Scene {
         if (potion && !this.consumedPotions().has(`${col},${row}`)) {
           this.consumePotion(col, row);
         }
+        const scroll = SCROLLS.find(s => s.col === col && s.row === row);
+        if (scroll && !this.consumedScrolls().has(`${col},${row}`)) {
+          this.consumeScroll(col, row);
+        }
         this.animatePath(steps, index + 1);
       },
     });
@@ -748,6 +776,69 @@ export class MapScene extends Phaser.Scene {
 
   private consumedPotions(): Set<string> {
     return this.registry.get("consumedPotions") as Set<string>;
+  }
+
+  private consumedScrolls(): Set<string> {
+    return this.registry.get("consumedScrolls") as Set<string>;
+  }
+
+  private applyXpGain(amount: number): void {
+    let xp = this.getHeroXp() + amount;
+    let level = this.getHeroLevel();
+    while (level < LEVELS.length) {
+      const threshold = LEVEL_THRESHOLDS[level];
+      if (threshold === undefined || xp < threshold) break;
+      const oldMaxHp = LEVELS[level - 1]!.maxHp;
+      level++;
+      const newMaxHp = LEVELS[level - 1]!.maxHp;
+      const currentHp = this.registry.get("heroHp") as number;
+      this.registry.set("heroHp", currentHp + (newMaxHp - oldMaxHp));
+    }
+    this.registry.set("heroXp", xp);
+    this.registry.set("heroLevel", level);
+  }
+
+  private consumeScroll(col: number, row: number): void {
+    const key = `${col},${row}`;
+    this.consumedScrolls().add(key);
+
+    this.applyXpGain(3);
+
+    const hp = this.getHeroHp();
+    const maxHp = this.getHeroMaxHp();
+    const level = this.getHeroLevel();
+    const xp = this.getHeroXp();
+
+    this.heroHpLabel.setText(`HP: ${hp}/${maxHp}`);
+    this.heroHpLabel.setStyle({ color: this.hpColor(hp) });
+
+    const nextThreshold = LEVEL_THRESHOLDS[level];
+    const xpText = nextThreshold !== undefined ? `Lvl ${level} • XP: ${xp}/${nextThreshold}` : `Lvl ${level} • MAX`;
+    this.heroXpLabel.setText(xpText);
+
+    const levelStats = LEVELS[level - 1]!;
+    this.heroDmgLabel.setText(`DMG: ${levelStats.dmgMin}-${levelStats.dmgMax}`);
+
+    const { x: cx, y: cy } = this.hexCenter(col, row);
+    const xpFloatText = this.add
+      .text(cx, cy, "+3 XP", { fontSize: "20px", color: "#4488cc" })
+      .setOrigin(0.5)
+      .setDepth(60);
+    this.tweens.add({
+      targets: xpFloatText,
+      y: cy - 50,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => xpFloatText.destroy(),
+    });
+
+    const sprite = this.scrollSprites.get(key);
+    if (sprite) {
+      sprite.destroy();
+      this.scrollSprites.delete(key);
+    }
+
+    this.saveProgress();
   }
 
   private consumePotion(col: number, row: number): void {

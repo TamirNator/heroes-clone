@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S11.1 — XP scrolls (closes v0.7)
+**Coder:** 2 scrolls at (12,8) and (5,6), grass-confirmed clear of enemies/water. Visual: bold blue `B` 28px depth 5. `registry["consumedScrolls"]` Set. Refactored: extracted level-up loop into `applyXpGain(amount)`, used by both combat-victory and scroll pickup. `consumeScroll` adds 3 XP, runs level-up, updates labels, spawns floating `+3 XP` blue text, destroys sprite, saves. Stored `heroXpLabel` as class field for in-place updates. SaveData extended. Reset/New Game clear.
+**Verification:** new e2e `s11-1-scrolls.spec.ts` covers render, pickup-with-level-up (5 XP threshold), persistence, Reset clears. All 35 tests pass (36.2s).
+**Status:** ✅ shipped — closes v0.7 (treasures: HP potions + XP scrolls).
+
+---
+
 ## S11.0 — HP potions on map (v0.7 kickoff)
 **Coder:** 3 potions at (7,9), (14,4), (3,10) — all grass. Visual: green `+` text 32px depth 5. `registry["consumedPotions"]` Set tracks pickups (lazy-init like defeatedEnemies). Pickup hook in `animatePath`'s post-step `onComplete`: if hero lands on a potion not yet consumed, calls `consumePotion(col,row)` which marks consumed, heals 5 HP capped at maxHp, spawns floating green `+5 HP` text, destroys the potion sprite, saves. SaveData extended with `consumed: string[]`. Reset/New Game clear.
 **Verification:** new e2e `s11-0-potions.spec.ts` covers initial render, pickup heals + sprite removal, persistence across reload, Reset clears. All 32 tests pass (33.7s). PM verified 3 green crosses on initial map screenshot.
