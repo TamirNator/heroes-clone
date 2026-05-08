@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S12.0 — Combat lunge animations (v0.8 kickoff)
+**Coder:** New `lungeAttack(attacker, onPeak, onLungeComplete?)` method. Hero attacks → sprite tweens +80px right with `Cubic.easeOut` over 100ms; on peak applies damage + spawns floating text; tweens back with `Cubic.easeIn` over 100ms. Enemy attack mirrors with -80px lunge. `isCombatAnimating` guard prevents click-spam. `onAttack`'s `onLungeComplete` schedules enemyAttack via existing 400ms delay.
+**Verification:** new e2e `s12-0-combat-animation.spec.ts` checks sprite x changes mid-lunge then returns. All 36 tests pass (41.0s) — no existing test adjustments needed (damage still applies at lunge peak, well within all `waitForFunction` windows).
+**Status:** ✅ shipped.
+
+---
+
 ## S11.1 — XP scrolls (closes v0.7)
 **Coder:** 2 scrolls at (12,8) and (5,6), grass-confirmed clear of enemies/water. Visual: bold blue `B` 28px depth 5. `registry["consumedScrolls"]` Set. Refactored: extracted level-up loop into `applyXpGain(amount)`, used by both combat-victory and scroll pickup. `consumeScroll` adds 3 XP, runs level-up, updates labels, spawns floating `+3 XP` blue text, destroys sprite, saves. Stored `heroXpLabel` as class field for in-place updates. SaveData extended. Reset/New Game clear.
 **Verification:** new e2e `s11-1-scrolls.spec.ts` covers render, pickup-with-level-up (5 XP threshold), persistence, Reset clears. All 35 tests pass (36.2s).

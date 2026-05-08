@@ -16,6 +16,9 @@ export class CombatScene extends Phaser.Scene {
   private enemyDamageMin = 1;
   private enemyDamageMax = 1;
   private combatOver = false;
+  private isCombatAnimating = false;
+  private heroSprite!: Phaser.GameObjects.Arc;
+  private enemySprite!: Phaser.GameObjects.Arc;
   private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
   private heroBarFill!: Phaser.GameObjects.Rectangle;
@@ -70,6 +73,7 @@ export class CombatScene extends Phaser.Scene {
     this.enemyDamageMin = this.initData.enemyDamageMin ?? 1;
     this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
+    this.isCombatAnimating = false;
     const heroDmgMin = this.initData.heroDamageMin ?? HERO_DAMAGE_MIN;
     const heroDmgMax = this.initData.heroDamageMax ?? HERO_DAMAGE_MAX;
     this.rollHeroDamage = () => Phaser.Math.Between(heroDmgMin, heroDmgMax);
@@ -79,12 +83,12 @@ export class CombatScene extends Phaser.Scene {
 
     // Hero stack (left)
     this.add.text(320, 280, "Hero", { fontSize: "20px", color: "#ffcc44" }).setOrigin(0.5);
-    this.add.circle(320, 360, 50, 0xffcc44).setStrokeStyle(2, 0x222222);
+    this.heroSprite = this.add.circle(320, 360, 50, 0xffcc44).setStrokeStyle(2, 0x222222);
     this.heroHpText = this.add.text(320, 455, `HP: ${this.heroHp}`, { fontSize: "24px", color: "#ffcc44" }).setOrigin(0.5);
 
     // Enemy stack (right)
     this.add.text(960, 280, this.initData.enemyName ?? "Enemy", { fontSize: "20px", color: "#cc4444" }).setOrigin(0.5);
-    this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
+    this.enemySprite = this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
     this.enemyHpText = this.add.text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" }).setOrigin(0.5);
 
     // VS
@@ -143,36 +147,69 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
   }
 
+  private lungeAttack(attacker: "hero" | "enemy", onPeak: () => void, onLungeComplete?: () => void): void {
+    const sprite = attacker === "hero" ? this.heroSprite : this.enemySprite;
+    const origX = sprite.x;
+    const offsetX = attacker === "hero" ? 80 : -80;
+
+    this.tweens.add({
+      targets: sprite,
+      x: origX + offsetX,
+      duration: 100,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        onPeak();
+        this.tweens.add({
+          targets: sprite,
+          x: origX,
+          duration: 100,
+          ease: "Cubic.easeIn",
+          onComplete: () => {
+            this.isCombatAnimating = false;
+            onLungeComplete?.();
+          },
+        });
+      },
+    });
+  }
+
   private onAttack(): void {
-    if (this.combatOver) return;
+    if (this.combatOver || this.isCombatAnimating) return;
+    this.isCombatAnimating = true;
 
-    const dmg = this.rollHeroDamage();
-    this.enemyHp = Math.max(0, this.enemyHp - dmg);
-    this.enemyHpText.setText(`HP: ${this.enemyHp}`);
-    this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
-    this.spawnDamageText(960, 400, dmg);
+    this.lungeAttack("hero", () => {
+      const dmg = this.rollHeroDamage();
+      this.enemyHp = Math.max(0, this.enemyHp - dmg);
+      this.enemyHpText.setText(`HP: ${this.enemyHp}`);
+      this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
+      this.spawnDamageText(960, 400, dmg);
 
-    if (this.enemyHp <= 0) {
-      this.combatOver = true;
-      this.attackBtn.setAlpha(0.5).disableInteractive();
-      this.showOutcome(true);
-    } else {
-      this.time.delayedCall(400, () => this.enemyAttack());
-    }
+      if (this.enemyHp <= 0) {
+        this.combatOver = true;
+        this.attackBtn.setAlpha(0.5).disableInteractive();
+        this.showOutcome(true);
+      }
+    }, () => {
+      if (!this.combatOver) {
+        this.time.delayedCall(400, () => this.enemyAttack());
+      }
+    });
   }
 
   private enemyAttack(): void {
-    const dmg = this.rollEnemyDamage();
-    this.heroHp = Math.max(0, this.heroHp - dmg);
-    this.heroHpText.setText(`HP: ${this.heroHp}`);
-    this.heroBarFill.displayWidth = Math.max(0, (this.heroHp / this.heroMaxHp) * BAR_WIDTH);
-    this.spawnDamageText(320, 400, dmg);
+    this.lungeAttack("enemy", () => {
+      const dmg = this.rollEnemyDamage();
+      this.heroHp = Math.max(0, this.heroHp - dmg);
+      this.heroHpText.setText(`HP: ${this.heroHp}`);
+      this.heroBarFill.displayWidth = Math.max(0, (this.heroHp / this.heroMaxHp) * BAR_WIDTH);
+      this.spawnDamageText(320, 400, dmg);
 
-    if (this.heroHp <= 0) {
-      this.combatOver = true;
-      this.attackBtn.setAlpha(0.5).disableInteractive();
-      this.showOutcome(false);
-    }
+      if (this.heroHp <= 0) {
+        this.combatOver = true;
+        this.attackBtn.setAlpha(0.5).disableInteractive();
+        this.showOutcome(false);
+      }
+    });
   }
 
   private showOutcome(victory: boolean): void {
