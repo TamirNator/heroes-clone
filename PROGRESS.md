@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S10.1 — Readability: enemy tooltip + hero damage label (closes v0.6)
+**Coder:** Hero damage label (`DMG: min-max`) below XP label, recreated on level-up. Enemy tooltip on hover: gold name + HP + DMG, optional RANGE/SPEED rows for Archer/Wolves. Container at `(sprite.x+80, sprite.y-30)` depth 200. Click conflict resolved by NOT making enemy sprite interactive — instead, hex tile's existing `pointerover` looks up `liveEnemies` and triggers tooltip. Click events still flow to the polygon → `onHexClicked`. No risk of swallowing input.
+**Verification:** new e2e `s10-1-readability.spec.ts` (DMG label text + tooltip render/destroy). All 29 tests pass (31.1s). PM verified screenshot showing tooltip on Goblin + hero stat panel.
+**Status:** ✅ shipped — closes v0.6 (hero progression: XP/levels + stat readability).
+
+---
+
 ## S10.0 — Hero XP + levels (v0.6 kickoff)
 **Coder:** 4-level table: L1 (10HP, 1-3dmg), L2 (13, 2-4), L3 (17, 2-5), L4 (22, 3-6). Thresholds [0, 5, 12, 25] XP. Total XP from all 6 enemies = 23 → reaches L3. `Enemy.xpReward` added (Goblin 2, Orc 4, Troll 7, Wolf 3, Archer 4). `registry["heroXp"]` and `["heroLevel"]` join `heroHp` in persistent state. CombatScene victory passes `xpGained` to MapScene; init block applies XP, loops level-ups (heals delta on each), persists. CombatScene reads `heroDamageMin/Max` from initData (passed from level table) so damage scales with level. HP label format `HP: N/M` uses dynamic max. New XP label below: `Lvl N • XP: x/threshold` (or `MAX` at L4). Reset/New Game also reset XP and Level.
 **Test updates:** `s9-1-persistent-hp.spec.ts` — Goblin+Orc defeats now trigger level-up so HP shows `10/13` instead of `7/10`. New `s10-0-progression.spec.ts` covers initial state + XP accumulation + level-up.

@@ -92,6 +92,8 @@ export class MapScene extends Phaser.Scene {
   liveEnemies: LiveEnemy[] = [];
   public lastPath: Hex[] = [];
   private heroHpLabel!: Phaser.GameObjects.Text;
+  private heroDmgLabel!: Phaser.GameObjects.Text;
+  private activeTooltip?: Phaser.GameObjects.Container;
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -225,8 +227,15 @@ export class MapScene extends Phaser.Scene {
           Phaser.Geom.Polygon.Contains
         );
 
-        poly.on("pointerover", () => poly.setFillStyle(hoverFill));
-        poly.on("pointerout", () => poly.setFillStyle(fill));
+        poly.on("pointerover", () => {
+          poly.setFillStyle(hoverFill);
+          const le = this.liveEnemies.find(e => e.col === col && e.row === row);
+          if (le) this.showEnemyTooltip(le.data, le.sprite);
+        });
+        poly.on("pointerout", () => {
+          poly.setFillStyle(fill);
+          this.hideEnemyTooltip();
+        });
         poly.on("pointerdown", () => this.onHexClicked(col, row));
       }
     }
@@ -334,6 +343,13 @@ export class MapScene extends Phaser.Scene {
     const xpText = nextThreshold !== undefined ? `Lvl ${level} • XP: ${xp}/${nextThreshold}` : `Lvl ${level} • MAX`;
     this.add
       .text(1280 - 20, 200, xpText, { fontSize: "14px", color: "#ffcc44" })
+      .setOrigin(1, 0)
+      .setDepth(20);
+
+    // Hero damage range label
+    const levelStats = LEVELS[level - 1]!;
+    this.heroDmgLabel = this.add
+      .text(1280 - 20, 225, `DMG: ${levelStats.dmgMin}-${levelStats.dmgMax}`, { fontSize: "16px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
   }
@@ -688,6 +704,51 @@ export class MapScene extends Phaser.Scene {
         this.scene.start("MapScene", { heroHp: HERO_HP });
       }
     });
+  }
+
+  private showEnemyTooltip(enemy: Enemy, sprite: Phaser.GameObjects.Arc): void {
+    this.hideEnemyTooltip();
+
+    const lines: Array<{ text: string; color: string }> = [
+      { text: enemy.name, color: "#ffcc44" },
+      { text: `HP: ${enemy.hp}`, color: "#ffffff" },
+      { text: `DMG: ${enemy.damageMin}-${enemy.damageMax}`, color: "#ffffff" },
+    ];
+    if (enemy.range !== undefined) {
+      lines.push({ text: `RANGE: ${enemy.range}`, color: "#ffffff" });
+    }
+    if (enemy.movesPerTurn > 1) {
+      lines.push({ text: `SPEED: ${enemy.movesPerTurn}`, color: "#ffffff" });
+    }
+
+    const lineH = 16;
+    const padX = 6;
+    const padY = 6;
+    const tooltipW = 140;
+    const tooltipH = lines.length * lineH + padY * 2;
+
+    const container = this.add.container(sprite.x + 80, sprite.y - 30);
+    container.setDepth(200);
+
+    const bg = this.add.rectangle(0, 0, tooltipW, tooltipH, 0x111111)
+      .setAlpha(0.9)
+      .setStrokeStyle(1, 0x444444)
+      .setOrigin(0, 0);
+    container.add(bg);
+
+    lines.forEach(({ text, color }, i) => {
+      const t = this.add.text(padX, padY + i * lineH, text, { fontSize: "12px", color }).setOrigin(0, 0);
+      container.add(t);
+    });
+
+    this.activeTooltip = container;
+  }
+
+  private hideEnemyTooltip(): void {
+    if (this.activeTooltip) {
+      this.activeTooltip.destroy();
+      this.activeTooltip = undefined;
+    }
   }
 
   private hexNeighbors(col: number, row: number): Hex[] {
