@@ -59,14 +59,14 @@ const TERRAIN_COST: Record<Terrain, number> = {
   water: Infinity,
 };
 
-type Enemy = { col: number; row: number; name: string; hp: number; damageMin: number; damageMax: number; movesPerTurn: number; range?: number; xpReward: number };
+type Enemy = { col: number; row: number; name: string; stackCount: number; hpPerUnit: number; damageMin: number; damageMax: number; movesPerTurn: number; range?: number; xpReward: number };
 const ENEMIES: readonly Enemy[] = [
-  { col: 4, row: 4, name: "Goblin", hp: 3, damageMin: 1, damageMax: 1, movesPerTurn: 1, xpReward: 2 },
-  { col: 10, row: 7, name: "Orc", hp: 5, damageMin: 1, damageMax: 2, movesPerTurn: 1, xpReward: 4 },
-  { col: 15, row: 11, name: "Troll", hp: 8, damageMin: 2, damageMax: 3, movesPerTurn: 1, xpReward: 7 },
-  { col: 5, row: 11, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
-  { col: 12, row: 2, name: "Wolf", hp: 4, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
-  { col: 8, row: 12, name: "Archer", hp: 3, damageMin: 1, damageMax: 2, movesPerTurn: 1, range: 3, xpReward: 4 },
+  { col: 4, row: 4, name: "Goblin", stackCount: 3, hpPerUnit: 1, damageMin: 1, damageMax: 1, movesPerTurn: 1, xpReward: 2 },
+  { col: 10, row: 7, name: "Orc", stackCount: 5, hpPerUnit: 1, damageMin: 1, damageMax: 2, movesPerTurn: 1, xpReward: 4 },
+  { col: 15, row: 11, name: "Troll", stackCount: 4, hpPerUnit: 2, damageMin: 2, damageMax: 3, movesPerTurn: 1, xpReward: 7 },
+  { col: 5, row: 11, name: "Wolf", stackCount: 2, hpPerUnit: 2, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
+  { col: 12, row: 2, name: "Wolf", stackCount: 2, hpPerUnit: 2, damageMin: 1, damageMax: 2, movesPerTurn: 2, xpReward: 3 },
+  { col: 8, row: 12, name: "Archer", stackCount: 3, hpPerUnit: 1, damageMin: 1, damageMax: 2, movesPerTurn: 1, range: 3, xpReward: 4 },
 ];
 
 type Hex = { col: number; row: number };
@@ -547,7 +547,9 @@ export class MapScene extends Phaser.Scene {
             originalCol: enemy.data.col,
             originalRow: enemy.data.row,
             enemyName: enemy.data.name,
-            enemyHp: enemy.data.hp,
+            enemyHp: enemy.data.stackCount * enemy.data.hpPerUnit,
+            enemyStackCount: enemy.data.stackCount,
+            enemyHpPerUnit: enemy.data.hpPerUnit,
             enemyDamageMin: enemy.data.damageMin,
             enemyDamageMax: enemy.data.damageMax,
             heroHp: this.getHeroHp(),
@@ -590,7 +592,9 @@ export class MapScene extends Phaser.Scene {
           originalCol: le.data.col,
           originalRow: le.data.row,
           enemyName: le.data.name,
-          enemyHp: le.data.hp,
+          enemyHp: le.data.stackCount * le.data.hpPerUnit,
+          enemyStackCount: le.data.stackCount,
+          enemyHpPerUnit: le.data.hpPerUnit,
           enemyDamageMin: le.data.damageMin,
           enemyDamageMax: le.data.damageMax,
           heroHp: this.getHeroHp(),
@@ -878,7 +882,7 @@ export class MapScene extends Phaser.Scene {
 
     const lines: Array<{ text: string; color: string }> = [
       { text: enemy.name, color: "#ffcc44" },
-      { text: `HP: ${enemy.hp}`, color: "#ffffff" },
+      { text: `HP: ${enemy.stackCount * enemy.hpPerUnit}`, color: "#ffffff" },
       { text: `DMG: ${enemy.damageMin}-${enemy.damageMax}`, color: "#ffffff" },
     ];
     if (enemy.range !== undefined) {

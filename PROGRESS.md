@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S13.0 — Stack-of-units representation (v1.1 kickoff)
+**Coder:** Removed `Enemy.hp` field, replaced with `stackCount` + `hpPerUnit` (totals preserved: Goblin 3×1, Orc 5×1, Troll 4×2, Wolf 2×2, Archer 3×1). `unitsRemaining(currentHp, hpPerUnit)` helper computes living units from `Math.ceil`. CombatScene displays `"Name  xN"` integrated into the existing stack name label (initial badge attempt at y=420 overlapped HP bar — fixed by inlining into name row at y=280).
+**Verification:** new e2e `s13-0-stacks.spec.ts` confirms initial badges (Hero x10, Troll x4) and updates after damage. All 38 tests pass (42.9s).
+**Status:** ✅ shipped — foundation for full multi-stack rewrite.
+
+---
+
 ## S12.1 — Damage shake on hit (closes v0.8 → v1.0)
 **Coder:** New `shakeOnHit(target)` method — 4-step tween chain (50ms each, total 200ms) jittering sprite x by ±6 then ±4 then back. Triggered in `onAttack`/`enemyAttack` `onPeak` callbacks alongside damage application. Guards on `combatOver` to skip during scene transitions. Runs parallel to lunge return tween (different sprites, no conflict).
 **Verification:** new e2e `s12-1-damage-shake.spec.ts` uses `waitForFunction` polling for sprite displacement (initial fixed-timeout approach hit the zero-crossing at ~75ms). All 37 tests pass (41.6s).
