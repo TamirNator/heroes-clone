@@ -22,6 +22,13 @@ const LEVELS: LevelStats[] = [
 ];
 const LEVEL_THRESHOLDS = [0, 5, 12, 25];
 
+type Potion = { col: number; row: number };
+const POTIONS: readonly Potion[] = [
+  { col: 7, row: 9 },
+  { col: 14, row: 4 },
+  { col: 3, row: 10 },
+];
+
 type Terrain = "grass" | "forest" | "water";
 const TERRAIN_FILL: Record<Terrain, number> = {
   grass: 0x2a3a4a,
@@ -73,6 +80,7 @@ type SaveData = {
   heroHp: number;
   heroXp?: number;
   heroLevel?: number;
+  consumed?: string[];
 };
 
 export class MapScene extends Phaser.Scene {
@@ -94,6 +102,7 @@ export class MapScene extends Phaser.Scene {
   private heroHpLabel!: Phaser.GameObjects.Text;
   private heroDmgLabel!: Phaser.GameObjects.Text;
   private activeTooltip?: Phaser.GameObjects.Container;
+  private potionSprites: Map<string, Phaser.GameObjects.Text> = new Map();
   private gameWon = false;
   private initData: {
     defeatedCol?: number;
@@ -129,6 +138,9 @@ export class MapScene extends Phaser.Scene {
     }
     if (!this.registry.has("heroLevel")) {
       this.registry.set("heroLevel", 1);
+    }
+    if (!this.registry.has("consumedPotions")) {
+      this.registry.set("consumedPotions", new Set<string>());
     }
 
     // Detect whether we arrived here from a scene transition (post-combat data) or a fresh/reset start.
@@ -183,6 +195,13 @@ export class MapScene extends Phaser.Scene {
         }
         if (save.heroLevel !== undefined) {
           this.registry.set("heroLevel", save.heroLevel);
+        }
+        if (save.consumed !== undefined) {
+          const consumedSet = this.consumedPotions();
+          consumedSet.clear();
+          for (const key of save.consumed) {
+            consumedSet.add(key);
+          }
         }
       } else {
         this.heroCol = 0;
@@ -257,6 +276,20 @@ export class MapScene extends Phaser.Scene {
       this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite });
     }
 
+    // Render potions
+    this.potionSprites = new Map();
+    const consumedSet = this.consumedPotions();
+    for (const potion of POTIONS) {
+      if (consumedSet.has(`${potion.col},${potion.row}`)) continue;
+      const { x: cx, y: cy } = this.hexCenter(potion.col, potion.row);
+      const sprite = this.add.text(cx, cy, "+", {
+        fontSize: "32px",
+        color: "#44cc44",
+        fontStyle: "bold",
+      }).setOrigin(0.5).setDepth(5);
+      this.potionSprites.set(`${potion.col},${potion.row}`, sprite);
+    }
+
     const defeated = this.registry.get("defeatedEnemies") as Set<string>;
     if (defeated.size >= ENEMIES.length) {
       this.renderWinOverlay();
@@ -324,6 +357,7 @@ export class MapScene extends Phaser.Scene {
         this.registry.set("heroXp", 0);
         this.registry.set("heroLevel", 1);
         (this.registry.get("defeatedEnemies") as Set<string>).clear();
+        this.consumedPotions().clear();
         this.scene.start("MapScene", {});
       }
     });
@@ -376,6 +410,7 @@ export class MapScene extends Phaser.Scene {
       this.registry.set("heroXp", 0);
       this.registry.set("heroLevel", 1);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
+      this.consumedPotions().clear();
       this.scene.start("MapScene", {});
     });
   }
@@ -394,6 +429,7 @@ export class MapScene extends Phaser.Scene {
       heroHp: this.getHeroHp(),
       heroXp: this.getHeroXp(),
       heroLevel: this.getHeroLevel(),
+      consumed: Array.from(this.consumedPotions()),
     };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
@@ -556,6 +592,10 @@ export class MapScene extends Phaser.Scene {
         this.heroRow = row;
         this.remainingMoves -= TERRAIN_COST[this.terrainAt(col, row)];
         this.movesText.setText(`Moves: ${this.remainingMoves}`);
+        const potion = POTIONS.find(p => p.col === col && p.row === row);
+        if (potion && !this.consumedPotions().has(`${col},${row}`)) {
+          this.consumePotion(col, row);
+        }
         this.animatePath(steps, index + 1);
       },
     });
@@ -704,6 +744,42 @@ export class MapScene extends Phaser.Scene {
         this.scene.start("MapScene", { heroHp: HERO_HP });
       }
     });
+  }
+
+  private consumedPotions(): Set<string> {
+    return this.registry.get("consumedPotions") as Set<string>;
+  }
+
+  private consumePotion(col: number, row: number): void {
+    const key = `${col},${row}`;
+    this.consumedPotions().add(key);
+
+    const currentHp = this.getHeroHp();
+    const newHp = Math.min(this.getHeroMaxHp(), currentHp + 5);
+    this.registry.set("heroHp", newHp);
+    this.heroHpLabel.setText(`HP: ${newHp}/${this.getHeroMaxHp()}`);
+    this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });
+
+    const { x: cx, y: cy } = this.hexCenter(col, row);
+    const healText = this.add
+      .text(cx, cy, "+5 HP", { fontSize: "20px", color: "#44cc44" })
+      .setOrigin(0.5)
+      .setDepth(60);
+    this.tweens.add({
+      targets: healText,
+      y: cy - 50,
+      alpha: 0,
+      duration: 800,
+      onComplete: () => healText.destroy(),
+    });
+
+    const sprite = this.potionSprites.get(key);
+    if (sprite) {
+      sprite.destroy();
+      this.potionSprites.delete(key);
+    }
+
+    this.saveProgress();
   }
 
   private showEnemyTooltip(enemy: Enemy, sprite: Phaser.GameObjects.Arc): void {

@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S11.0 — HP potions on map (v0.7 kickoff)
+**Coder:** 3 potions at (7,9), (14,4), (3,10) — all grass. Visual: green `+` text 32px depth 5. `registry["consumedPotions"]` Set tracks pickups (lazy-init like defeatedEnemies). Pickup hook in `animatePath`'s post-step `onComplete`: if hero lands on a potion not yet consumed, calls `consumePotion(col,row)` which marks consumed, heals 5 HP capped at maxHp, spawns floating green `+5 HP` text, destroys the potion sprite, saves. SaveData extended with `consumed: string[]`. Reset/New Game clear.
+**Verification:** new e2e `s11-0-potions.spec.ts` covers initial render, pickup heals + sprite removal, persistence across reload, Reset clears. All 32 tests pass (33.7s). PM verified 3 green crosses on initial map screenshot.
+**Status:** ✅ shipped.
+
+---
+
 ## S10.1 — Readability: enemy tooltip + hero damage label (closes v0.6)
 **Coder:** Hero damage label (`DMG: min-max`) below XP label, recreated on level-up. Enemy tooltip on hover: gold name + HP + DMG, optional RANGE/SPEED rows for Archer/Wolves. Container at `(sprite.x+80, sprite.y-30)` depth 200. Click conflict resolved by NOT making enemy sprite interactive — instead, hex tile's existing `pointerover` looks up `liveEnemies` and triggers tooltip. Click events still flow to the polygon → `onHexClicked`. No risk of swallowing input.
 **Verification:** new e2e `s10-1-readability.spec.ts` (DMG label text + tooltip render/destroy). All 29 tests pass (31.1s). PM verified screenshot showing tooltip on Goblin + hero stat panel.
