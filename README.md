@@ -2,25 +2,58 @@
 
 [![CI](https://github.com/TamirNator/heroes-clone/actions/workflows/ci.yml/badge.svg)](https://github.com/TamirNator/heroes-clone/actions/workflows/ci.yml)
 
-A small Heroes 3-style turn-based strategy game built with TypeScript, Phaser 3, and Vite. Walk a hero across a hex map, fight enemies in a side-view combat scene, defeat all 3 to win.
+A small Heroes 3-style turn-based strategy game built with TypeScript, Phaser 3, and Vite. Walk a hero across a hex map with terrain, fight a varied roster of enemies in a side-view combat scene, level up, collect potions and scrolls, defeat them all to win.
 
-## Gameplay (v0.3)
+## Gameplay (v1.0)
 
-- **Hex map** — 20×15 pointy-top hex grid; hover to highlight tiles.
-- **Hero** — gold circle, starts at top-left. Click any reachable hex to walk there.
-- **Movement budget** — 5 moves per turn, BFS pathfinding decides the route, `End Turn` refreshes.
-- **Three enemies on the map**:
-  - **Goblin** at (4, 4) — HP 3, damage 1
-  - **Orc** at (10, 7) — HP 5, damage 1
-  - **Troll** at (15, 11) — HP 8, damage 2
-- **Combat** — walking onto an enemy hex flips to a side-view combat scene. Click `Attack` to deal damage; the enemy retaliates each round until one side dies.
-- **Outcomes** — `VICTORY!` removes the enemy from the map permanently; the hero takes the enemy's hex on return. `DEFEAT` resets the run (defeated enemies stay defeated thanks to the Phaser game registry).
-- **Enemy AI** — every End Turn, each living enemy BFS-walks one tile toward the hero. If an enemy reaches the hero's hex, combat starts immediately.
-- **Random damage** — Hero rolls 1–3, Goblin 1, Orc 1–2, Troll 2–3. Floating `-N` text appears on each hit.
-- **Win condition** — defeat all three enemies to see `GAME WON!`. The `New Game` button clears progress and starts over.
-- **Persistence** — defeated enemies + hero position are saved to `localStorage`. Refresh the page and your progress is intact. The `Reset` button (top-right, red border) wipes the save.
+### Map
 
-The difficulty curve is tight: fighting in order (Goblin → Orc → Troll) leaves the hero at HP 1 after the Troll. Out-of-order fights are likely fatal. With AI now chasing you, dawdling is dangerous.
+- **20×15 pointy-top hex grid** with three terrain types:
+  - **Grass** (dark slate) — walkable, costs 1 movement
+  - **Forest** (dark green) — walkable, costs **2 movement** (Dijkstra prefers grass)
+  - **Water** (dark blue) — **impassable**
+- Hover any hex to highlight it. Hovering an enemy shows a tooltip with name, HP, damage range, and (for special enemies) range/speed.
+
+### Hero
+
+- Gold circle, starts at (0, 0) top-left.
+- Click any reachable hex to walk there using cost-aware Dijkstra pathfinding.
+- **5 movement points per turn** — terrain costs subtract from the budget. `End Turn` refreshes.
+- **Persistent HP** between combats (currently `N/M` displayed top-right; color-coded green/yellow/red).
+- **XP and levels:** earn XP for each combat victory; cross thresholds to level up (max HP and damage range increase). Level table: L1 (10 HP, 1–3 dmg), L2 (13, 2–4), L3 (17, 2–5), L4 (22, 3–6).
+
+### Enemies (6 total)
+
+| Name | Spawn | HP | Damage | Speed | XP |
+|---|---|---|---|---|---|
+| Goblin | (4, 4) | 3 | 1 | 1 | 2 |
+| Orc | (10, 7) | 5 | 1–2 | 1 | 4 |
+| Troll | (15, 11) | 8 | 2–3 | 1 | 7 |
+| Wolf | (5, 11) | 4 | 1–2 | **2** | 3 |
+| Wolf | (12, 2) | 4 | 1–2 | **2** | 3 |
+| Archer | (8, 12) | 3 | 1–2 | 1 (range **3**) | 4 |
+
+- **Wolves** (orange-red) move 2 tiles per turn — harder to outrun.
+- **Archer** (yellow-gold) shoots from up to 3 hops away during the enemy turn — damages hero HP on the map without entering combat.
+- All other enemies must reach the hero's hex to fight.
+
+### Combat (side-view scene)
+
+- Hero (gold) on the left, enemy stack (red/orange/yellow) on the right.
+- HP bars + numeric labels for both. Color-coded by side.
+- Click `Attack` — hero **lunges** toward the enemy, deals random damage at impact, defender **shakes**, floating `-N` damage text rises and fades. Enemy retaliates 400ms later with the same animation flow.
+- `VICTORY!` (green) — removes enemy permanently, awards XP, hero takes the enemy's hex on return.
+- `DEFEAT` (red) — full reset of hero HP and position; defeated enemies stay defeated.
+
+### Pickups on the map
+
+- **HP Potions** — 3 green `+` icons at fixed grass tiles. Walk onto one to heal **+5 HP** (capped at max). Permanently consumed.
+- **XP Scrolls** — 2 blue `B` icons at fixed grass tiles. Walk onto one to gain **+3 XP** (level-up triggers if threshold crossed).
+
+### Win + persistence
+
+- Defeat **all 6 enemies** to see `GAME WON!` overlay → `New Game` button restarts everything fresh.
+- All progress (defeated enemies, consumed pickups, hero HP/XP/level/position, remaining moves) is **saved to `localStorage`** — refresh the page and the run continues. The red `Reset` button (top-right) wipes the save.
 
 ## Stack
 
@@ -84,11 +117,11 @@ PROGRESS.md               Slice-by-slice changelog of how the game was built
 
 See `PROGRESS.md` for the slice-by-slice history (what each step added, what bugs were found, how they were fixed).
 
-## Possible next steps
+## Possible next steps (post-1.0)
 
-- **HP bars** — visual bar instead of/alongside the `HP: N` text.
-- **Map variety** — random enemy placement, different terrain types, impassable tiles, biome colors.
-- **More enemy types** — orc archer (ranged), troll shaman (heals), goblin pack (multi-stack).
-- **Towns / treasures** — pickup tiles that grant gold or HP, towns to recruit units.
-- **Multi-stack combat** — multiple unit types per side instead of single hero vs single enemy.
-- **Hero progression** — leveling, equipment, spells.
+- **Multi-stack combat** — multiple unit types per side (Heroes-3 style "stacks of N units"). The biggest deferred feature.
+- **Towns** — recruit units to your stacks; refill HP at a town tile.
+- **Procedural map generation** — randomize enemy / terrain / pickup placement each `New Game` for replayability.
+- **Equipment & spells** — items dropped by enemies, spell book with cast options in combat.
+- **Sound effects** — hit, victory, footstep, ambient.
+- **Difficulty selection** — easy / normal / hard scaling enemy stats.

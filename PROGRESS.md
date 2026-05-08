@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S12.1 — Damage shake on hit (closes v0.8 → v1.0)
+**Coder:** New `shakeOnHit(target)` method — 4-step tween chain (50ms each, total 200ms) jittering sprite x by ±6 then ±4 then back. Triggered in `onAttack`/`enemyAttack` `onPeak` callbacks alongside damage application. Guards on `combatOver` to skip during scene transitions. Runs parallel to lunge return tween (different sprites, no conflict).
+**Verification:** new e2e `s12-1-damage-shake.spec.ts` uses `waitForFunction` polling for sprite displacement (initial fixed-timeout approach hit the zero-crossing at ~75ms). All 37 tests pass (41.6s).
+**Status:** ✅ shipped — combat now kinetic with attacker lunge + defender shake.
+
+---
+
 ## S12.0 — Combat lunge animations (v0.8 kickoff)
 **Coder:** New `lungeAttack(attacker, onPeak, onLungeComplete?)` method. Hero attacks → sprite tweens +80px right with `Cubic.easeOut` over 100ms; on peak applies damage + spawns floating text; tweens back with `Cubic.easeIn` over 100ms. Enemy attack mirrors with -80px lunge. `isCombatAnimating` guard prevents click-spam. `onAttack`'s `onLungeComplete` schedules enemyAttack via existing 400ms delay.
 **Verification:** new e2e `s12-0-combat-animation.spec.ts` checks sprite x changes mid-lunge then returns. All 36 tests pass (41.0s) — no existing test adjustments needed (damage still applies at lunge peak, well within all `waitForFunction` windows).

@@ -147,6 +147,28 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
   }
 
+  private shakeOnHit(target: "hero" | "enemy"): void {
+    if (this.combatOver) return;
+    const sprite = target === "hero" ? this.heroSprite : this.enemySprite;
+    const origX = sprite.x;
+    this.tweens.add({
+      targets: sprite, x: origX - 6, duration: 50, ease: "Linear",
+      onComplete: () => {
+        this.tweens.add({
+          targets: sprite, x: origX + 6, duration: 50, ease: "Linear",
+          onComplete: () => {
+            this.tweens.add({
+              targets: sprite, x: origX - 4, duration: 50, ease: "Linear",
+              onComplete: () => {
+                this.tweens.add({ targets: sprite, x: origX, duration: 50, ease: "Linear" });
+              },
+            });
+          },
+        });
+      },
+    });
+  }
+
   private lungeAttack(attacker: "hero" | "enemy", onPeak: () => void, onLungeComplete?: () => void): void {
     const sprite = attacker === "hero" ? this.heroSprite : this.enemySprite;
     const origX = sprite.x;
@@ -183,6 +205,7 @@ export class CombatScene extends Phaser.Scene {
       this.enemyHpText.setText(`HP: ${this.enemyHp}`);
       this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
       this.spawnDamageText(960, 400, dmg);
+      this.shakeOnHit("enemy");
 
       if (this.enemyHp <= 0) {
         this.combatOver = true;
@@ -203,6 +226,7 @@ export class CombatScene extends Phaser.Scene {
       this.heroHpText.setText(`HP: ${this.heroHp}`);
       this.heroBarFill.displayWidth = Math.max(0, (this.heroHp / this.heroMaxHp) * BAR_WIDTH);
       this.spawnDamageText(320, 400, dmg);
+      this.shakeOnHit("hero");
 
       if (this.heroHp <= 0) {
         this.combatOver = true;
