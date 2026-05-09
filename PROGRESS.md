@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S19.2 — Random pickup positions on Random Game
+**PM (direct):** Added `MapScene.generateRandomPickups(terrain?, enemySpawns?)` returning `{ potions, scrolls }` of length matching POTIONS.length / SCROLLS.length. Avoids hero spawn, water tiles, and enemy spawns. Stored in `registry["randomPotions"]` + `["randomScrolls"]`. Render loops + pickup-check in `animatePath` both check the random arrays first, fall back to fixed POTIONS/SCROLLS. TitleScene's "Random Game" generates terrain + enemy spawns + pickups; "New Game" clears all four random keys. All 54 tests still pass — Random Game now produces fully procedural maps; default New Game keeps the fixed layout.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S19.0 — Random enemy positions on Random Game
 **PM (direct):** New `MapScene.generateRandomEnemySpawns(terrain?)` static — picks 6 spawn coords avoiding hero spawn (with 5×5 buffer for breathing room), pickups, water (if terrain provided). Falls back to default spawn on placement failure. Stored in `registry["randomEnemySpawns"]`. Enemy render loop reads override per index, builds an `Enemy` with random col/row but same stats, defeat key uses the random coord. TitleScene "Random Game" generates BOTH terrain + enemy spawns; "New Game" clears both.
 **Verification:** all 54 tests pass. Random Game now produces meaningfully different layouts each click.

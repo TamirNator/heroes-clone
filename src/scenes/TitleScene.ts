@@ -39,14 +39,20 @@ export class TitleScene extends Phaser.Scene {
       this.clearAllProgress();
       this.game.registry.remove("randomTerrain");
       this.game.registry.remove("randomEnemySpawns");
+      this.game.registry.remove("randomPotions");
+      this.game.registry.remove("randomScrolls");
       this.scene.start("MapScene", {});
     });
     buttonY += 70;
     this.makeButton(640, buttonY, "Random Game", "#88ccff", () => {
       this.clearAllProgress();
       const terrain = MapScene.generateRandomTerrain();
+      const enemySpawns = MapScene.generateRandomEnemySpawns(terrain);
+      const pickups = MapScene.generateRandomPickups(terrain, enemySpawns);
       this.game.registry.set("randomTerrain", terrain);
-      this.game.registry.set("randomEnemySpawns", MapScene.generateRandomEnemySpawns(terrain));
+      this.game.registry.set("randomEnemySpawns", enemySpawns);
+      this.game.registry.set("randomPotions", pickups.potions);
+      this.game.registry.set("randomScrolls", pickups.scrolls);
       this.scene.start("MapScene", {});
     });
     buttonY += 70;

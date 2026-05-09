@@ -329,10 +329,12 @@ export class MapScene extends Phaser.Scene {
       this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite, badge });
     }
 
-    // Render potions
+    // Render potions (random or default)
     this.potionSprites = new Map();
     const consumedSet = this.consumedPotions();
-    for (const potion of POTIONS) {
+    const randomPotions = this.registry.get("randomPotions") as Array<{ col: number; row: number }> | undefined;
+    const potionList = randomPotions ?? POTIONS;
+    for (const potion of potionList) {
       if (consumedSet.has(`${potion.col},${potion.row}`)) continue;
       const { x: cx, y: cy } = this.hexCenter(potion.col, potion.row);
       const sprite = this.add.text(cx, cy, "+", {
@@ -343,10 +345,12 @@ export class MapScene extends Phaser.Scene {
       this.potionSprites.set(`${potion.col},${potion.row}`, sprite);
     }
 
-    // Render scrolls
+    // Render scrolls (random or default)
     this.scrollSprites = new Map();
     const consumedScrollSet = this.consumedScrolls();
-    for (const scroll of SCROLLS) {
+    const randomScrolls = this.registry.get("randomScrolls") as Array<{ col: number; row: number }> | undefined;
+    const scrollList = randomScrolls ?? SCROLLS;
+    for (const scroll of scrollList) {
       if (consumedScrollSet.has(`${scroll.col},${scroll.row}`)) continue;
       const { x: cx, y: cy } = this.hexCenter(scroll.col, scroll.row);
       const sprite = this.add.text(cx, cy, "B", {
@@ -751,11 +755,15 @@ export class MapScene extends Phaser.Scene {
         this.heroRow = row;
         this.remainingMoves -= TERRAIN_COST[this.terrainAt(col, row)];
         this.movesText.setText(`Moves: ${this.remainingMoves}`);
-        const potion = POTIONS.find(p => p.col === col && p.row === row);
+        const randomP = this.registry.get("randomPotions") as Array<{ col: number; row: number }> | undefined;
+        const potionList = randomP ?? POTIONS;
+        const potion = potionList.find(p => p.col === col && p.row === row);
         if (potion && !this.consumedPotions().has(`${col},${row}`)) {
           this.consumePotion(col, row);
         }
-        const scroll = SCROLLS.find(s => s.col === col && s.row === row);
+        const randomS = this.registry.get("randomScrolls") as Array<{ col: number; row: number }> | undefined;
+        const scrollList = randomS ?? SCROLLS;
+        const scroll = scrollList.find(s => s.col === col && s.row === row);
         if (scroll && !this.consumedScrolls().has(`${col},${row}`)) {
           this.consumeScroll(col, row);
         }
@@ -822,6 +830,32 @@ export class MapScene extends Phaser.Scene {
     place("water", 6 + Math.floor(Math.random() * 5)); // 6-10 water tiles
     place("forest", 8 + Math.floor(Math.random() * 6)); // 8-13 forest tiles
     return overrides;
+  }
+
+  // Generate random pickup positions (potions + scrolls) avoiding hero spawn and water tiles.
+  static generateRandomPickups(
+    terrain?: Record<string, Terrain>,
+    enemySpawns?: Array<{ col: number; row: number }>
+  ): { potions: Array<{ col: number; row: number }>; scrolls: Array<{ col: number; row: number }> } {
+    const used = new Set<string>();
+    used.add("0,0");
+    if (enemySpawns) for (const e of enemySpawns) used.add(`${e.col},${e.row}`);
+    const pick = (count: number): Array<{ col: number; row: number }> => {
+      const out: Array<{ col: number; row: number }> = [];
+      let attempts = 0;
+      while (out.length < count && attempts < count * 30) {
+        attempts++;
+        const col = Math.floor(Math.random() * COLS);
+        const row = Math.floor(Math.random() * ROWS);
+        const key = `${col},${row}`;
+        if (used.has(key)) continue;
+        if (terrain && terrain[key] === "water") continue;
+        used.add(key);
+        out.push({ col, row });
+      }
+      return out;
+    };
+    return { potions: pick(POTIONS.length), scrolls: pick(SCROLLS.length) };
   }
 
   // Generate random spawn positions for each enemy, avoiding hero spawn,
