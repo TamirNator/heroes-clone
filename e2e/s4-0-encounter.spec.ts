@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('S4.0 — encounter trigger', () => {
   test('walking onto enemy hex transitions to CombatScene, return goes back to MapScene', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     // Wait for the canvas to mount and Phaser to boot
     const canvas = page.locator('canvas');

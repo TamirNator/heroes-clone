@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S16.1 — Title scene
+**PM (direct):** New `src/scenes/TitleScene.ts` set as the startup scene. Shows "HEROES CLONE" 72px gold + "v1.3 — turn-based hex strategy" subtitle. Buttons: "Continue" (only if save exists, gold), "New Game" (clears registry + localStorage, starts MapScene), "About" (overlay with description). Tests skip via `?nointro` query param: every existing `e2e/*.spec.ts` updated via sed from `goto('/')` to `goto('/?nointro')`. TitleScene `create()` checks `window.location.search.length > 1` and short-circuits to MapScene if any param present.
+**Verification:** new e2e `s16-1-title-scene.spec.ts` covers (a) plain `/` shows TitleScene with title text, (b) `/?nointro` skips it, (c) clicking New Game button transitions to MapScene. All 50 tests pass (2.4m).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S16.0 — Camera shake on unit death
 **PM (direct):** Added `this.cameras.main.shake(duration, intensity)` in `spawnDeathPuff`. Intensity and duration scale with kill count (1 dead = subtle 120ms × 0.005, 4 dead = forceful 280ms × 0.011). Pairs with existing puff + sprite shake for visceral kill feedback.
 **No new test** — pure visual polish, no observable state change worth asserting beyond visual inspection. All 48 existing tests still pass.

@@ -73,7 +73,7 @@ async function defeatEnemy(page: any, enemyKey: string, attacks: number) {
 
 test.describe('S10.0 — hero XP + levels', () => {
   test('initial state is Lvl 1, XP 0, HP 28/28', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -98,7 +98,7 @@ test.describe('S10.0 — hero XP + levels', () => {
   });
 
   test('defeating Goblin grants 2 XP; defeating Orc levels up to Lvl 2', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

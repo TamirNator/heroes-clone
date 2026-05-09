@@ -41,7 +41,7 @@ async function clickAttackAndWaitForHeroHpText(page: any, expectedHeroHpText: st
 
 test.describe('S9.1 — persistent hero HP between combats', () => {
   test('hero HP persists across fights and resets on Reset', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

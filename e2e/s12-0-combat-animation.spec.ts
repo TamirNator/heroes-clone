@@ -9,7 +9,7 @@ async function waitForScene(page: any, key: string, timeout = 15000) {
 
 test.describe('S12.0 — combat lunge animations', () => {
   test('hero sprite lunges on attack and returns to original position', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

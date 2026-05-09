@@ -70,7 +70,7 @@ async function clickReturn(page: any) {
 
 test.describe('S6.2 — enemy variation (different stats per enemy)', () => {
   test('each enemy has distinct name, hp, and damage passed to CombatScene', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');

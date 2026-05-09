@@ -9,7 +9,7 @@ async function waitForScene(page: any, key: string, timeout = 15000) {
 
 test.describe('S14.4 — keyboard shortcuts in combat', () => {
   test('A triggers Attack, 2 selects Archers stack, O toggles Auto', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

@@ -3,12 +3,13 @@ import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { MapScene } from "./scenes/MapScene";
 import { CombatScene } from "./scenes/CombatScene";
+import { TitleScene } from "./scenes/TitleScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   width: 1280,
   height: 720,
   parent: "game",
-  scene: [MapScene, BootScene, CombatScene],
+  scene: [TitleScene, MapScene, BootScene, CombatScene],
   backgroundColor: "#0a0a0a",
 };
 

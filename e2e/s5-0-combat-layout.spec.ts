@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('S5.0 — combat scene visual layout', () => {
   test('hero and enemy stacks visible with HP labels', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();

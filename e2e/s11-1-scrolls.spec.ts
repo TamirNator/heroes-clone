@@ -17,7 +17,7 @@ async function countScrollSprites(page: any): Promise<number> {
 
 test.describe('S11.1 — XP scrolls on map', () => {
   test('initial render shows 2 scrolls', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -27,7 +27,7 @@ test.describe('S11.1 — XP scrolls on map', () => {
   });
 
   test('walking onto scroll grants +3 XP, removes sprite', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -98,7 +98,7 @@ test.describe('S11.1 — XP scrolls on map', () => {
   });
 
   test('consumed scroll persists after reload; Reset restores all 2', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

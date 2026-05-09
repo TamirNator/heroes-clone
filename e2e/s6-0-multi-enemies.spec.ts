@@ -67,7 +67,7 @@ async function defeatEnemy(page: any, enemyKey: string, attackCount: number) {
 
 test.describe('S6.0 — multiple enemies', () => {
   test('3 enemies present; defeating them one by one removes them from the map', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();

@@ -23,7 +23,7 @@ async function clickAttackAndWait(page: any, waitMs: number) {
 
 test.describe('S13.0 — stack-of-units representation in combat', () => {
   test('Troll stack labels update correctly through combat', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

@@ -35,7 +35,7 @@ async function clickEndTurn(page: any) {
 
 test.describe('S9.2 — Archer ranged enemy', () => {
   test('Archer moves toward hero when out of range (>3 hops)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -78,7 +78,7 @@ test.describe('S9.2 — Archer ranged enemy', () => {
   });
 
   test('Archer shoots hero when within 3 hops and does not move', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

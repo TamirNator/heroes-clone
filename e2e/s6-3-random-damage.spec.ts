@@ -49,7 +49,7 @@ async function openTrollCombat(page: any) {
 
 test.describe('S6.3 — random damage rolls', () => {
   test('hero and enemy rolls produce varying values across 100 samples', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');
@@ -86,7 +86,7 @@ test.describe('S6.3 — random damage rolls', () => {
   });
 
   test('pinned rolls: hero=3, Troll dmg=2 → VICTORY in 3 hits, hero ends at 6 HP', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');

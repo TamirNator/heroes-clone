@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('S4.1 — defeat outcome', () => {
   test('enemy removed and hero placed at enemy hex after Return from CombatScene', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();

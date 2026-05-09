@@ -71,7 +71,7 @@ async function defeatEnemyViaAttack(page: any, enemyKey: string) {
 
 test.describe('S6.1 — game won state', () => {
   test('defeating all 3 enemies shows GAME WON overlay; New Game resets', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();

@@ -79,7 +79,7 @@ async function defeatGoblin(page: any) {
 
 test.describe('S7.1 — save/load progress', () => {
   test('defeat saves to localStorage; reload restores hero position and defeated enemies', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     // Clear any stale save from previous tests
     await page.evaluate(() => localStorage.clear());
     // Reload to start fresh with cleared storage
@@ -119,7 +119,7 @@ test.describe('S7.1 — save/load progress', () => {
   });
 
   test('Reset button clears save and restarts with 3 enemies at origin', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

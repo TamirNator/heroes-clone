@@ -9,7 +9,7 @@ async function waitForScene(page: any, key: string, timeout = 10000) {
 
 test.describe('S7.2 — HP bars in CombatScene', () => {
   test('HP bars render at full width and shrink proportionally after attack', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');

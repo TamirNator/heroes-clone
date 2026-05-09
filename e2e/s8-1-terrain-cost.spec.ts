@@ -21,7 +21,7 @@ test.describe('S8.1 — terrain movement cost', () => {
   // Dijkstra finds shortest-cost path (1,1)→(2,1)→(3,2): cost=3, 2 hops.
 
   test('forest tile costs 2 movement points to enter', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Teleport hero to (1,1) with budget 5
@@ -72,7 +72,7 @@ test.describe('S8.1 — terrain movement cost', () => {
   });
 
   test('path truncated at budget boundary — cannot enter forest when budget exhausted', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Teleport hero to (1,1) with budget 1 (just enough for one grass step)
@@ -120,7 +120,7 @@ test.describe('S8.1 — terrain movement cost', () => {
   });
 
   test('Dijkstra picks cheaper all-grass route over forest shortcut', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Teleport hero to (1,1) with ample budget

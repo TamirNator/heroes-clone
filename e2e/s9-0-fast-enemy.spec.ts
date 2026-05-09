@@ -43,7 +43,7 @@ function hexBfsHops(
 
 test.describe('S9.0 — fast enemy type (Wolves)', () => {
   test('Wolf moves 2 tiles per turn; Goblin moves 1 tile per turn', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Read initial positions

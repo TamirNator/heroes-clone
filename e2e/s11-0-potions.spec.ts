@@ -17,7 +17,7 @@ async function countPotionSprites(page: any): Promise<number> {
 
 test.describe('S11.0 — HP potions on map', () => {
   test('initial render shows 3 potions', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -29,7 +29,7 @@ test.describe('S11.0 — HP potions on map', () => {
   });
 
   test('walking onto potion heals hero and destroys sprite', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -104,7 +104,7 @@ test.describe('S11.0 — HP potions on map', () => {
   });
 
   test('consumed potion persists after reload; Reset restores all 3', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

@@ -36,7 +36,7 @@ async function triggerGoblinCombat(page: any) {
 
 test.describe('S13.1 — hero has two unit stacks', () => {
   test('initial army: two stacks with correct HP and names', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -62,7 +62,7 @@ test.describe('S13.1 — hero has two unit stacks', () => {
   });
 
   test('active stack toggle: click Archers circle to select it', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -99,7 +99,7 @@ test.describe('S13.1 — hero has two unit stacks', () => {
   });
 
   test('attack uses active stack damage; Archers active kills Goblin in one hit with pinned roll=3', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
@@ -156,7 +156,7 @@ test.describe('S13.1 — hero has two unit stacks', () => {
   });
 
   test('enemy retaliation targets active stack and reduces its HP and count', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

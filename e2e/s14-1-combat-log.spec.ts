@@ -9,7 +9,7 @@ async function waitForScene(page: any, key: string, timeout = 15000) {
 
 test.describe('S14.1 — combat log panel', () => {
   test('log records each combat event in order, ending with VICTORY', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');

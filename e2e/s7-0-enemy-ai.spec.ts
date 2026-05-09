@@ -24,7 +24,7 @@ async function clickEndTurn(page: any) {
 
 test.describe('S7.0 — enemy AI movement on End Turn', () => {
   test('enemy moves one step toward hero after End Turn', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');
@@ -59,7 +59,7 @@ test.describe('S7.0 — enemy AI movement on End Turn', () => {
   });
 
   test('enemy reaches hero after enough turns and triggers combat', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
     await waitForScene(page, 'MapScene');

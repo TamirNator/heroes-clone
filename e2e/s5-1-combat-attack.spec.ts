@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('S5.1 — combat attack loop', () => {
   test('2 attacks defeat Goblin, VICTORY shown, returns to map with enemy gone', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();

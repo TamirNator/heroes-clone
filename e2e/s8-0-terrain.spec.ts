@@ -9,7 +9,7 @@ async function waitForScene(page: any, key: string, timeout = 10000) {
 
 test.describe('S8.0 — terrain types + impassable tiles', () => {
   test('terrain tiles render with correct fill colors', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     await page.screenshot({ path: 'test-results/s8-0-terrain.png' });
@@ -31,7 +31,7 @@ test.describe('S8.0 — terrain types + impassable tiles', () => {
   });
 
   test('clicking water tile does not move hero', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     const waterPos = await page.evaluate(() => {
@@ -61,7 +61,7 @@ test.describe('S8.0 — terrain types + impassable tiles', () => {
   });
 
   test('enemy AI does not path through water', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Teleport hero to (8,3) — north of the water patch at (6-7, 3-4)
@@ -112,7 +112,7 @@ test.describe('S8.0 — terrain types + impassable tiles', () => {
   });
 
   test('hero can walk around water patch', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?nointro');
     await waitForScene(page, 'MapScene');
 
     // Teleport hero to (5,3) with extra moves
