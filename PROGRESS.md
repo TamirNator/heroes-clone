@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S14.2 — Round counter + scene-in fade
+**PM (direct):** Added `public roundNumber` field + `roundText` Text below VS, format `"Round N"`. Increments at end of each full hero+enemy exchange (in `enemyAttack` lunge `onLungeComplete`). Refactored `enemyAttack` to extract `doEnemyAttackPeak()` so the lungeAttack call has both `onPeak` and `onLungeComplete` callbacks. Added a 250ms black-overlay fade-out at scene start (depth 1000 Rectangle, alpha 1→0 tween, then destroyed).
+**Verification:** new e2e `s14-2-round-counter.spec.ts` — pin damage 1/1, click Attack, wait for `roundNumber === 2`, assert label "Round 2". All 45 tests pass (55.2s).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S14.1 — Combat log panel
 **PM (myself, direct edit):** CODER agent hit user's monthly Claude usage limit mid-task. PM implemented S14.1 directly in the main session.
 - New fields `public logLines: string[]` and `private logText`. 1200×120 dark Rectangle at (640, 660), text overlay at (60, 605).

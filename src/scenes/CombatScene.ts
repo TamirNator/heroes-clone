@@ -50,6 +50,8 @@ export class CombatScene extends Phaser.Scene {
   private attackBtn!: Phaser.GameObjects.Rectangle;
   public logLines: string[] = [];
   private logText!: Phaser.GameObjects.Text;
+  public roundNumber = 1;
+  private roundText!: Phaser.GameObjects.Text;
 
   initData: {
     enemyCol?: number;
@@ -126,6 +128,7 @@ export class CombatScene extends Phaser.Scene {
     this.combatOver = false;
     this.isCombatAnimating = false;
     this.logLines = [];
+    this.roundNumber = 1;
     this.rollHeroDamage = () => {
       const stack = this.heroArmy[this.activeStackIndex];
       if (!stack) return 0;
@@ -179,8 +182,18 @@ export class CombatScene extends Phaser.Scene {
       .text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" })
       .setOrigin(0.5);
 
-    // VS
-    this.add.text(640, 360, "VS", { fontSize: "32px", color: "#888888" }).setOrigin(0.5);
+    // VS + round counter
+    this.add.text(640, 340, "VS", { fontSize: "32px", color: "#888888" }).setOrigin(0.5);
+    this.roundText = this.add
+      .text(640, 380, `Round ${this.roundNumber}`, { fontSize: "16px", color: "#888888" })
+      .setOrigin(0.5);
+
+    // Scene-in fade: black overlay fading out
+    const fade = this.add
+      .rectangle(640, 360, 1280, 720, 0x000000)
+      .setOrigin(0.5)
+      .setDepth(1000);
+    this.tweens.add({ targets: fade, alpha: 0, duration: 250, onComplete: () => fade.destroy() });
 
     // Return button — rects[0]
     const returnBtn = this.add
@@ -414,47 +427,58 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private enemyAttack(): void {
-    this.lungeAttack("enemy", () => {
-      const dmg = this.rollEnemyDamage();
-      const activeStack = this.heroArmy[this.activeStackIndex];
-      if (!activeStack) return;
-
-      const oldHeroHp = activeStack.currentHp;
-      activeStack.currentHp = Math.max(0, oldHeroHp - dmg);
-      const stackMax = activeStack.count * activeStack.hpPerUnit;
-      this.heroHpTexts[this.activeStackIndex]?.setText(
-        `HP: ${activeStack.currentHp}/${stackMax}`
-      );
-      this.heroStackLabels[this.activeStackIndex]?.setText(
-        this.formatStackLabel(activeStack.name, unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit))
-      );
-      this.heroBarFills[this.activeStackIndex]!.displayWidth = Math.max(
-        0,
-        (activeStack.currentHp / stackMax) * HERO_BAR_WIDTH
-      );
-      this.spawnDamageText(HERO_STACK_X[this.activeStackIndex]!, 400, dmg);
-      this.shakeOnHit(this.heroSprites[this.activeStackIndex]!);
-      const heroKilled = unitsRemaining(oldHeroHp, activeStack.hpPerUnit) - unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit);
-      if (heroKilled > 0) this.spawnDeathPuff("hero", heroKilled);
-
-      const heroKillSuffix = heroKilled > 0 ? ` (Killed ${heroKilled})` : "";
-      this.addLogLine(`${this.enemyName} attacks ${activeStack.name} for ${dmg} damage.${heroKillSuffix}`);
-
-      if (activeStack.currentHp <= 0) {
-        this.addLogLine(`${activeStack.name} routed!`);
-        // Auto-switch to next living stack
-        const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
-        if (nextAlive !== -1) {
-          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
-          this.activeStackIndex = nextAlive;
-          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
-        } else {
-          this.combatOver = true;
-          this.attackBtn.setAlpha(0.5).disableInteractive();
-          this.showOutcome(false);
+    this.lungeAttack(
+      "enemy",
+      () => this.doEnemyAttackPeak(),
+      () => {
+        if (!this.combatOver) {
+          this.roundNumber += 1;
+          this.roundText.setText(`Round ${this.roundNumber}`);
         }
       }
-    });
+    );
+  }
+
+  private doEnemyAttackPeak(): void {
+    const dmg = this.rollEnemyDamage();
+    const activeStack = this.heroArmy[this.activeStackIndex];
+    if (!activeStack) return;
+
+    const oldHeroHp = activeStack.currentHp;
+    activeStack.currentHp = Math.max(0, oldHeroHp - dmg);
+    const stackMax = activeStack.count * activeStack.hpPerUnit;
+    this.heroHpTexts[this.activeStackIndex]?.setText(
+      `HP: ${activeStack.currentHp}/${stackMax}`
+    );
+    this.heroStackLabels[this.activeStackIndex]?.setText(
+      this.formatStackLabel(activeStack.name, unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit))
+    );
+    this.heroBarFills[this.activeStackIndex]!.displayWidth = Math.max(
+      0,
+      (activeStack.currentHp / stackMax) * HERO_BAR_WIDTH
+    );
+    this.spawnDamageText(HERO_STACK_X[this.activeStackIndex]!, 400, dmg);
+    this.shakeOnHit(this.heroSprites[this.activeStackIndex]!);
+    const heroKilled = unitsRemaining(oldHeroHp, activeStack.hpPerUnit) - unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit);
+    if (heroKilled > 0) this.spawnDeathPuff("hero", heroKilled);
+
+    const heroKillSuffix = heroKilled > 0 ? ` (Killed ${heroKilled})` : "";
+    this.addLogLine(`${this.enemyName} attacks ${activeStack.name} for ${dmg} damage.${heroKillSuffix}`);
+
+    if (activeStack.currentHp <= 0) {
+      this.addLogLine(`${activeStack.name} routed!`);
+      // Auto-switch to next living stack
+      const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
+      if (nextAlive !== -1) {
+        this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
+        this.activeStackIndex = nextAlive;
+        this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
+      } else {
+        this.combatOver = true;
+        this.attackBtn.setAlpha(0.5).disableInteractive();
+        this.showOutcome(false);
+      }
+    }
   }
 
   private showOutcome(victory: boolean): void {
