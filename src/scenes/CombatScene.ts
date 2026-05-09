@@ -602,9 +602,13 @@ export class CombatScene extends Phaser.Scene {
           heroRow: this.initData.enemyRow,
           heroArmy: this.heroArmy,
           xpGained: this.initData.xpReward ?? 0,
+          lastOutcome: `VICTORY: defeated ${this.enemyName} (+${this.initData.xpReward ?? 0} XP)`,
         });
       } else {
-        this.scene.start("MapScene", { heroHp: HERO_HP });
+        this.scene.start("MapScene", {
+          heroHp: HERO_HP,
+          lastOutcome: `DEFEAT by ${this.enemyName} — hero respawned`,
+        });
       }
     });
   }

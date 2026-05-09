@@ -142,13 +142,14 @@ export class MapScene extends Phaser.Scene {
     heroHp?: number;
     heroArmy?: HeroStackState[];
     xpGained?: number;
+    lastOutcome?: string;
   } = {};
 
   constructor() {
     super("MapScene");
   }
 
-  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number; heroArmy?: HeroStackState[]; xpGained?: number }): void {
+  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number; heroArmy?: HeroStackState[]; xpGained?: number; lastOutcome?: string }): void {
     this.initData = data ?? {};
   }
 
@@ -460,6 +461,28 @@ export class MapScene extends Phaser.Scene {
       .text(1280 - 20, 250, `Enemies: ${remaining}/${ENEMIES.length}`, { fontSize: "14px", color: "#cc8888" })
       .setOrigin(1, 0)
       .setDepth(20);
+
+    // Last combat outcome banner (briefly, if scene was entered with one)
+    if (this.initData.lastOutcome) {
+      const isVictory = this.initData.lastOutcome.startsWith("VICTORY");
+      const banner = this.add
+        .text(640, 30, this.initData.lastOutcome, {
+          fontSize: "20px",
+          color: isVictory ? "#44cc44" : "#cc4444",
+          fontStyle: "bold",
+          backgroundColor: "#000000",
+          padding: { x: 12, y: 6 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(50);
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        delay: 2000,
+        duration: 600,
+        onComplete: () => banner.destroy(),
+      });
+    }
   }
 
   private toggleHelp(): void {

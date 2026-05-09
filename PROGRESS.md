@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S18.1 — Last-combat-outcome banner on map
+**PM (direct):** CombatScene's victory/defeat path now passes `lastOutcome: "VICTORY: defeated Goblin (+2 XP)"` (or `"DEFEAT by Troll — hero respawned"`) back to MapScene via scene-data. MapScene `create()` reads it and renders a brief Text banner at top-center (y=30, 20px bold, green/red, black bg padding), holds 2s then alpha-tweens out over 600ms then destroys.
+**Verification:** all 52 tests pass — banner is purely additive UI shown only after combat-return scene transitions, no test currently asserts on it.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S18.0 — Enemies-remaining counter on map UI
 **PM (direct):** Added `Enemies: N/6` text label below hero stat panel at (1280-20, 250), pink-red `#cc8888` 14px. Live count = `ENEMIES.length - defeatedEnemies.size`. No new test (single Text addition, behavior visible in any subsequent screenshot). All 52 tests still pass.
 **Status:** ✅ shipped (PM direct).
