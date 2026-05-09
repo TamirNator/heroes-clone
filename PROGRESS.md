@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S17.0 — In-game help overlay
+**PM (direct):** Press `H` (or `?`) on the map to toggle a help overlay listing all controls (map clicks, End Turn, Reset, combat A/1/2/O/ESC). Implemented as a `Phaser.GameObjects.Container` at depth 150 with dark Rectangle background + title + body Text + dismiss hint. `helpOverlay?: Container` field tracks open state. Click overlay background to close, or press `H` again. Hooked via `this.input.keyboard?.on("keydown-H", ...)` and `keydown-FORWARD_SLASH`.
+**Verification:** new e2e `s17-0-help-overlay.spec.ts` clicks canvas for focus then `keyboard.press('H')`, asserts `map.helpOverlay !== undefined`, presses again, asserts gone. All 51 tests pass (2.5m).
+**Brief detour earlier:** tried `scale.FIT` config for responsive canvas — broke 10 tests that use `canvas.click({ position: {x,y} })` since CSS scaling shifts coords. Reverted (would need updating all 16 click-position tests).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S16.1 — Title scene
 **PM (direct):** New `src/scenes/TitleScene.ts` set as the startup scene. Shows "HEROES CLONE" 72px gold + "v1.3 — turn-based hex strategy" subtitle. Buttons: "Continue" (only if save exists, gold), "New Game" (clears registry + localStorage, starts MapScene), "About" (overlay with description). Tests skip via `?nointro` query param: every existing `e2e/*.spec.ts` updated via sed from `goto('/')` to `goto('/?nointro')`. TitleScene `create()` checks `window.location.search.length > 1` and short-circuits to MapScene if any param present.
 **Verification:** new e2e `s16-1-title-scene.spec.ts` covers (a) plain `/` shows TitleScene with title text, (b) `/?nointro` skips it, (c) clicking New Game button transitions to MapScene. All 50 tests pass (2.4m).

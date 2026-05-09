@@ -133,6 +133,7 @@ export class MapScene extends Phaser.Scene {
   private scrollSprites: Map<string, Phaser.GameObjects.Text> = new Map();
   private heroXpLabel!: Phaser.GameObjects.Text;
   private gameWon = false;
+  public helpOverlay?: Phaser.GameObjects.Container;
   private initData: {
     defeatedCol?: number;
     defeatedRow?: number;
@@ -355,6 +356,10 @@ export class MapScene extends Phaser.Scene {
       this.renderWinOverlay();
     }
 
+    // Help overlay — toggle with H or ?
+    this.input.keyboard?.on("keydown-H", () => this.toggleHelp());
+    this.input.keyboard?.on("keydown-FORWARD_SLASH", () => this.toggleHelp());
+
     this.movesText = this.add
       .text(1280 - 20, 20, `Moves: ${this.remainingMoves}`, {
         fontSize: "20px",
@@ -448,6 +453,52 @@ export class MapScene extends Phaser.Scene {
       .text(1280 - 20, 225, `DMG: ${firstStack.damageMin}-${firstStack.damageMax}`, { fontSize: "16px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
+  }
+
+  private toggleHelp(): void {
+    if (this.helpOverlay) {
+      this.helpOverlay.destroy();
+      this.helpOverlay = undefined;
+      return;
+    }
+    const container = this.add.container(640, 360).setDepth(150);
+    const bg = this.add
+      .rectangle(0, 0, 640, 420, 0x000000, 0.9)
+      .setStrokeStyle(2, 0xffcc44)
+      .setOrigin(0.5);
+    const title = this.add
+      .text(0, -180, "HELP", { fontSize: "32px", color: "#ffcc44", fontStyle: "bold" })
+      .setOrigin(0.5);
+    const body = this.add
+      .text(
+        0,
+        -10,
+        [
+          "MAP",
+          "  • Click any hex — walk hero there (5 moves/turn)",
+          "  • Click an enemy — walk into combat with it",
+          "  • Hover an enemy — see its name, HP, damage",
+          "  • End Turn button — refresh moves; enemies move",
+          "  • Reset — wipe save; New Game from scratch",
+          "",
+          "COMBAT",
+          "  • A — Attack with active stack",
+          "  • 1 / 2 — switch active stack",
+          "  • O — toggle Auto-attack",
+          "  • ESC — Return to map",
+          "",
+          "  H or ? — toggle this help",
+        ].join("\n"),
+        { fontSize: "14px", color: "#cccccc", lineSpacing: 4, align: "left" }
+      )
+      .setOrigin(0.5);
+    const dismiss = this.add
+      .text(0, 175, "[ press H or click anywhere to close ]", { fontSize: "12px", color: "#888888" })
+      .setOrigin(0.5);
+    container.add([bg, title, body, dismiss]);
+    bg.setInteractive();
+    bg.on("pointerdown", () => this.toggleHelp());
+    this.helpOverlay = container;
   }
 
   private renderWinOverlay(): void {
