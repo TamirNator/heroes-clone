@@ -42,6 +42,7 @@ export class CombatScene extends Phaser.Scene {
   private isCombatAnimating = false;
   private enemyHpPerUnit = 1;
   private enemyName = "Enemy";
+  private enemyColor = 0xcc4444;
   private enemySprite!: Phaser.GameObjects.Arc;
   private enemyHpText!: Phaser.GameObjects.Text;
   private enemyStackLabel!: Phaser.GameObjects.Text;
@@ -262,6 +263,35 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
   }
 
+  private spawnDeathPuff(target: "hero" | "enemy", count: number): void {
+    const sprite = target === "hero" ? this.heroSprites[this.activeStackIndex]! : this.enemySprite;
+    const color = target === "hero" ? (HERO_STACK_FILLS[this.activeStackIndex] ?? 0xffcc44) : this.enemyColor;
+    for (let i = 0; i < count; i++) {
+      this.time.delayedCall(i * 100, () => this.spawnSinglePuff(sprite, color));
+    }
+  }
+
+  private spawnSinglePuff(sprite: Phaser.GameObjects.Arc, color: number): void {
+    const puff = this.add
+      .circle(
+        sprite.x + Phaser.Math.Between(-15, 15),
+        sprite.y + Phaser.Math.Between(-15, 15),
+        8,
+        color,
+        0.8
+      )
+      .setDepth(30);
+    this.tweens.add({
+      targets: puff,
+      scaleX: 2.5,
+      scaleY: 2.5,
+      alpha: 0,
+      duration: 400,
+      ease: "Cubic.easeOut",
+      onComplete: () => puff.destroy(),
+    });
+  }
+
   private shakeOnHit(sprite: Phaser.GameObjects.Arc): void {
     if (this.combatOver) return;
     const origX = sprite.x;
@@ -329,8 +359,10 @@ export class CombatScene extends Phaser.Scene {
     this.lungeAttack(
       "hero",
       () => {
+        const oldEnemyHp = this.enemyHp;
         const dmg = this.rollHeroDamage();
-        this.enemyHp = Math.max(0, this.enemyHp - dmg);
+        const newEnemyHp = Math.max(0, oldEnemyHp - dmg);
+        this.enemyHp = newEnemyHp;
         this.enemyHpText.setText(`HP: ${this.enemyHp}`);
         this.enemyStackLabel.setText(
           this.formatStackLabel(this.enemyName, unitsRemaining(this.enemyHp, this.enemyHpPerUnit))
@@ -338,6 +370,8 @@ export class CombatScene extends Phaser.Scene {
         this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
         this.spawnDamageText(960, 400, dmg);
         this.shakeOnHit(this.enemySprite);
+        const killed = unitsRemaining(oldEnemyHp, this.enemyHpPerUnit) - unitsRemaining(newEnemyHp, this.enemyHpPerUnit);
+        if (killed > 0) this.spawnDeathPuff("enemy", killed);
 
         if (this.enemyHp <= 0) {
           this.combatOver = true;
@@ -359,7 +393,8 @@ export class CombatScene extends Phaser.Scene {
       const activeStack = this.heroArmy[this.activeStackIndex];
       if (!activeStack) return;
 
-      activeStack.currentHp = Math.max(0, activeStack.currentHp - dmg);
+      const oldHeroHp = activeStack.currentHp;
+      activeStack.currentHp = Math.max(0, oldHeroHp - dmg);
       const stackMax = activeStack.count * activeStack.hpPerUnit;
       this.heroHpTexts[this.activeStackIndex]?.setText(
         `HP: ${activeStack.currentHp}/${stackMax}`
@@ -373,6 +408,8 @@ export class CombatScene extends Phaser.Scene {
       );
       this.spawnDamageText(HERO_STACK_X[this.activeStackIndex]!, 400, dmg);
       this.shakeOnHit(this.heroSprites[this.activeStackIndex]!);
+      const heroKilled = unitsRemaining(oldHeroHp, activeStack.hpPerUnit) - unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit);
+      if (heroKilled > 0) this.spawnDeathPuff("hero", heroKilled);
 
       if (activeStack.currentHp <= 0) {
         // Auto-switch to next living stack

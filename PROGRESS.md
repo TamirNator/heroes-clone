@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S14.0 — Unit-death puff animation
+**Coder:** When a damage event drops a stack's unit count, spawn one puff per dead unit at the stack's position. Each puff: Arc r=8, color matches stack (gold variants for hero, red for enemy), alpha 0.8, depth 30. Tween: scale 1→2.5, alpha 0.8→0 over 400ms, ease Cubic.easeOut. Multiple deaths stagger 100ms apart with ±15px random offset. `unitsRemaining(oldHp,hpPerUnit) - unitsRemaining(newHp,hpPerUnit)` computes kill count.
+**Verification:** new e2e `s14-0-death-puff.spec.ts` triggers Troll combat with hero dmg pinned to 4 (kills 2 units), counts Arc children before/peak/after. All 43 tests pass (50.6s).
+**Status:** ✅ shipped.
+
+---
+
 ## S13.1 — Hero army with TWO unit stacks (closes v1.1)
 **Coder:** Hero is now an army of 2 stacks: **Swordsmen** (count 5, HP 4/unit, dmg 1-3, total HP 20) + **Archers** (count 4, HP 2/unit, dmg 2-4, total HP 8). Total hero HP = 28 (up from 10). Stored in `registry["heroArmy"]` as `HeroStackState[]`, persisted to `SaveData.heroArmy`. Legacy `registry.heroHp` kept as derived sum.
 **CombatScene:** two hero circles side-by-side (240, 360) and (400, 360), radius 40, gold variants. Active stack (default Swordsmen) shows thick yellow stroke; click another circle to switch. `rollHeroDamage` reads active stack's dmg range. Lunge animation uses active sprite. Enemy retaliation damages active stack's `currentHp`. Auto-switch to next living stack on death; defeat when all stacks dead.
