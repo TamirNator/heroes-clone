@@ -8,10 +8,28 @@ const HERO_FILL = 0xffcc44;
 const HERO_STROKE = 0x222222;
 const MOVEMENT_PER_TURN = 5;
 const SAVE_KEY = "heroes-clone:save";
-const HERO_HP = 10;
+const HERO_HP = 10; // legacy constant kept for defeat-reset signal only
 const HP_COLOR_HIGH = "#44cc44";
 const HP_COLOR_MID = "#cccc44";
 const HP_COLOR_LOW = "#cc4444";
+
+type HeroStackState = {
+  name: string;
+  count: number;
+  hpPerUnit: number;
+  damageMin: number;
+  damageMax: number;
+  currentHp: number;
+};
+
+const DEFAULT_HERO_ARMY: HeroStackState[] = [
+  { name: "Swordsmen", count: 5, hpPerUnit: 4, damageMin: 1, damageMax: 3, currentHp: 20 },
+  { name: "Archers", count: 4, hpPerUnit: 2, damageMin: 2, damageMax: 4, currentHp: 8 },
+];
+
+function freshArmy(): HeroStackState[] {
+  return DEFAULT_HERO_ARMY.map(u => ({ ...u }));
+}
 
 type LevelStats = { maxHp: number; dmgMin: number; dmgMax: number };
 const LEVELS: LevelStats[] = [
@@ -84,6 +102,7 @@ type SaveData = {
   heroRow: number;
   remainingMoves: number;
   heroHp: number;
+  heroArmy?: HeroStackState[];
   heroXp?: number;
   heroLevel?: number;
   consumed?: string[];
@@ -119,6 +138,7 @@ export class MapScene extends Phaser.Scene {
     heroCol?: number;
     heroRow?: number;
     heroHp?: number;
+    heroArmy?: HeroStackState[];
     xpGained?: number;
   } = {};
 
@@ -126,7 +146,7 @@ export class MapScene extends Phaser.Scene {
     super("MapScene");
   }
 
-  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number; xpGained?: number }): void {
+  init(data: { defeatedCol?: number; defeatedRow?: number; heroCol?: number; heroRow?: number; heroHp?: number; heroArmy?: HeroStackState[]; xpGained?: number }): void {
     this.initData = data ?? {};
   }
 
@@ -139,8 +159,11 @@ export class MapScene extends Phaser.Scene {
     if (!this.registry.has("defeatedEnemies")) {
       this.registry.set("defeatedEnemies", new Set<string>());
     }
+    if (!this.registry.has("heroArmy")) {
+      this.registry.set("heroArmy", freshArmy());
+    }
     if (!this.registry.has("heroHp")) {
-      this.registry.set("heroHp", HERO_HP);
+      this.registry.set("heroHp", this.getHeroHp());
     }
     if (!this.registry.has("heroXp")) {
       this.registry.set("heroXp", 0);
@@ -167,7 +190,10 @@ export class MapScene extends Phaser.Scene {
           `${this.initData.defeatedCol},${this.initData.defeatedRow}`
         );
       }
-      if (this.initData.heroHp !== undefined) {
+      if (this.initData.heroArmy !== undefined) {
+        this.registry.set("heroArmy", this.initData.heroArmy);
+        this.registry.set("heroHp", this.getHeroHp());
+      } else if (this.initData.heroHp !== undefined) {
         this.registry.set("heroHp", Math.max(1, this.initData.heroHp));
       }
       if (this.initData.xpGained !== undefined) {
@@ -187,7 +213,10 @@ export class MapScene extends Phaser.Scene {
         for (const key of save.defeated) {
           defeatedSet.add(key);
         }
-        if (save.heroHp !== undefined) {
+        if (save.heroArmy !== undefined) {
+          this.registry.set("heroArmy", save.heroArmy);
+          this.registry.set("heroHp", this.getHeroHp());
+        } else if (save.heroHp !== undefined) {
           this.registry.set("heroHp", save.heroHp);
         }
         if (save.heroXp !== undefined) {
@@ -215,9 +244,10 @@ export class MapScene extends Phaser.Scene {
         this.heroRow = 0;
         this.remainingMoves = MOVEMENT_PER_TURN;
       }
-      // Defeat passes heroHp: HERO_HP without position data — override and persist.
+      // Defeat passes heroHp: HERO_HP without army — reset army and persist.
       if (this.initData.heroHp !== undefined) {
-        this.registry.set("heroHp", this.initData.heroHp);
+        this.registry.set("heroArmy", freshArmy());
+        this.registry.set("heroHp", this.getHeroHp());
         this.saveProgress();
       }
     }
@@ -374,7 +404,8 @@ export class MapScene extends Phaser.Scene {
     this.resetBtn.on("pointerdown", () => {
       if (!this.isAnimating && !this.gameWon) {
         this.clearProgress();
-        this.registry.set("heroHp", HERO_HP);
+        this.registry.set("heroArmy", freshArmy());
+        this.registry.set("heroHp", this.getHeroHp());
         this.registry.set("heroXp", 0);
         this.registry.set("heroLevel", 1);
         (this.registry.get("defeatedEnemies") as Set<string>).clear();
@@ -402,10 +433,10 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
-    // Hero damage range label
-    const levelStats = LEVELS[level - 1]!;
+    // Hero damage range label (derived from first army stack)
+    const firstStack = this.getHeroArmy()[0]!;
     this.heroDmgLabel = this.add
-      .text(1280 - 20, 225, `DMG: ${levelStats.dmgMin}-${levelStats.dmgMax}`, { fontSize: "16px", color: "#ffcc44" })
+      .text(1280 - 20, 225, `DMG: ${firstStack.damageMin}-${firstStack.damageMax}`, { fontSize: "16px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
   }
@@ -428,7 +459,8 @@ export class MapScene extends Phaser.Scene {
     newGameBtn.on("pointerout", () => newGameBtn.setFillStyle(0x2a3a4a));
     newGameBtn.on("pointerdown", () => {
       this.clearProgress();
-      this.registry.set("heroHp", HERO_HP);
+      this.registry.set("heroArmy", freshArmy());
+      this.registry.set("heroHp", this.getHeroHp());
       this.registry.set("heroXp", 0);
       this.registry.set("heroLevel", 1);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
@@ -450,6 +482,7 @@ export class MapScene extends Phaser.Scene {
       heroRow: this.heroRow,
       remainingMoves: this.remainingMoves,
       heroHp: this.getHeroHp(),
+      heroArmy: this.getHeroArmy().map(u => ({ ...u })),
       heroXp: this.getHeroXp(),
       heroLevel: this.getHeroLevel(),
       consumed: Array.from(this.consumedPotions()),
@@ -540,7 +573,6 @@ export class MapScene extends Phaser.Scene {
 
         if (enemy.col === this.heroCol && enemy.row === this.heroRow) {
           this.isAnimating = false;
-          const level = this.getHeroLevel();
           this.scene.start("CombatScene", {
             enemyCol: enemy.col,
             enemyRow: enemy.row,
@@ -552,9 +584,7 @@ export class MapScene extends Phaser.Scene {
             enemyHpPerUnit: enemy.data.hpPerUnit,
             enemyDamageMin: enemy.data.damageMin,
             enemyDamageMax: enemy.data.damageMax,
-            heroHp: this.getHeroHp(),
-            heroDamageMin: LEVELS[level - 1]!.dmgMin,
-            heroDamageMax: LEVELS[level - 1]!.dmgMax,
+            heroArmy: this.getHeroArmy().map(u => ({ ...u })),
             xpReward: enemy.data.xpReward,
           });
           return;
@@ -585,7 +615,6 @@ export class MapScene extends Phaser.Scene {
       this.endTurnBtn.setAlpha(1);
       const le = this.liveEnemies.find(e => e.col === this.heroCol && e.row === this.heroRow);
       if (le) {
-        const level = this.getHeroLevel();
         this.scene.start("CombatScene", {
           enemyCol: le.col,
           enemyRow: le.row,
@@ -597,9 +626,7 @@ export class MapScene extends Phaser.Scene {
           enemyHpPerUnit: le.data.hpPerUnit,
           enemyDamageMin: le.data.damageMin,
           enemyDamageMax: le.data.damageMax,
-          heroHp: this.getHeroHp(),
-          heroDamageMin: LEVELS[level - 1]!.dmgMin,
-          heroDamageMax: LEVELS[level - 1]!.dmgMax,
+          heroArmy: this.getHeroArmy().map(u => ({ ...u })),
           xpReward: le.data.xpReward,
         });
       } else {
@@ -633,8 +660,12 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
+  private getHeroArmy(): HeroStackState[] {
+    return this.registry.get("heroArmy") as HeroStackState[];
+  }
+
   private getHeroHp(): number {
-    return this.registry.get("heroHp") as number;
+    return this.getHeroArmy().reduce((s, u) => s + u.currentHp, 0);
   }
 
   private getHeroXp(): number {
@@ -646,7 +677,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   private getHeroMaxHp(): number {
-    return LEVELS[this.getHeroLevel() - 1]!.maxHp;
+    return this.getHeroArmy().reduce((s, u) => s + u.count * u.hpPerUnit, 0);
   }
 
   private hpColor(hp: number): string {
@@ -756,8 +787,16 @@ export class MapScene extends Phaser.Scene {
 
     this.time.delayedCall(120, () => {
       const damage = Phaser.Math.Between(enemy.data.damageMin, enemy.data.damageMax ?? enemy.data.damageMin);
-      const currentHp = this.getHeroHp();
-      const newHp = Math.max(0, currentHp - damage);
+      const army = this.getHeroArmy();
+      let remaining = damage;
+      for (const stack of army) {
+        if (stack.currentHp > 0 && remaining > 0) {
+          const taken = Math.min(stack.currentHp, remaining);
+          stack.currentHp -= taken;
+          remaining -= taken;
+        }
+      }
+      const newHp = this.getHeroHp();
       this.registry.set("heroHp", newHp);
       this.heroHpLabel.setText(`HP: ${newHp}/${this.getHeroMaxHp()}`);
       this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });
@@ -769,7 +808,8 @@ export class MapScene extends Phaser.Scene {
       this.tweens.add({ targets: dmgText, y: hy - 60, alpha: 0, duration: 600, onComplete: () => dmgText.destroy() });
 
       if (newHp <= 0) {
-        this.registry.set("heroHp", HERO_HP);
+        this.registry.set("heroArmy", freshArmy());
+        this.registry.set("heroHp", this.getHeroHp());
         this.heroCol = 0;
         this.heroRow = 0;
         this.saveProgress();
@@ -792,14 +832,16 @@ export class MapScene extends Phaser.Scene {
     while (level < LEVELS.length) {
       const threshold = LEVEL_THRESHOLDS[level];
       if (threshold === undefined || xp < threshold) break;
-      const oldMaxHp = LEVELS[level - 1]!.maxHp;
       level++;
-      const newMaxHp = LEVELS[level - 1]!.maxHp;
-      const currentHp = this.registry.get("heroHp") as number;
-      this.registry.set("heroHp", currentHp + (newMaxHp - oldMaxHp));
+      const army = this.getHeroArmy();
+      for (const stack of army) {
+        stack.count += 1;
+        stack.currentHp += stack.hpPerUnit;
+      }
     }
     this.registry.set("heroXp", xp);
     this.registry.set("heroLevel", level);
+    this.registry.set("heroHp", this.getHeroHp());
   }
 
   private consumeScroll(col: number, row: number): void {
@@ -820,8 +862,8 @@ export class MapScene extends Phaser.Scene {
     const xpText = nextThreshold !== undefined ? `Lvl ${level} • XP: ${xp}/${nextThreshold}` : `Lvl ${level} • MAX`;
     this.heroXpLabel.setText(xpText);
 
-    const levelStats = LEVELS[level - 1]!;
-    this.heroDmgLabel.setText(`DMG: ${levelStats.dmgMin}-${levelStats.dmgMax}`);
+    const armyFirstStack = this.getHeroArmy()[0]!;
+    this.heroDmgLabel.setText(`DMG: ${armyFirstStack.damageMin}-${armyFirstStack.damageMax}`);
 
     const { x: cx, y: cy } = this.hexCenter(col, row);
     const xpFloatText = this.add
@@ -849,8 +891,17 @@ export class MapScene extends Phaser.Scene {
     const key = `${col},${row}`;
     this.consumedPotions().add(key);
 
-    const currentHp = this.getHeroHp();
-    const newHp = Math.min(this.getHeroMaxHp(), currentHp + 5);
+    const army = this.getHeroArmy();
+    let remainingHeal = 5;
+    for (const stack of army) {
+      const stackMax = stack.count * stack.hpPerUnit;
+      if (stack.currentHp < stackMax && remainingHeal > 0) {
+        const added = Math.min(remainingHeal, stackMax - stack.currentHp);
+        stack.currentHp += added;
+        remainingHeal -= added;
+      }
+    }
+    const newHp = this.getHeroHp();
     this.registry.set("heroHp", newHp);
     this.heroHpLabel.setText(`HP: ${newHp}/${this.getHeroMaxHp()}`);
     this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });

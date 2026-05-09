@@ -34,12 +34,13 @@ test.describe('S11.0 — HP potions on map', () => {
     await page.reload();
     await waitForScene(page, 'MapScene');
 
-    // Set hero HP to 5 so +5 heals to exactly 10 (max at level 1)
+    // Set Swordsmen HP to 15 (needs 5 HP), total = 15+8=23, so +5 heals Swordsmen to 20, total 28
     await page.evaluate(() => {
       const g = (window as any).__game;
-      g.registry.set('heroHp', 5);
+      g.registry.get('heroArmy')[0].currentHp = 15;
+      g.registry.set('heroHp', 23);
       const map = g.scene.getScene('MapScene') as any;
-      map.heroHpLabel.setText('HP: 5/10');
+      map.heroHpLabel.setText('HP: 23/28');
     });
 
     // Teleport hero adjacent to potion at (7,9) — place at (6,9) (1 step away)
@@ -78,7 +79,7 @@ test.describe('S11.0 — HP potions on map', () => {
     await page.screenshot({ path: 'test-results/s11-0-after-pickup.png' });
 
     const heroHp = await page.evaluate(() => (window as any).__game.registry.get('heroHp') as number);
-    expect(heroHp).toBe(10);
+    expect(heroHp).toBe(28); // Swordsmen healed from 15 to 20, total 20+8=28
 
     const hpLabel = await page.evaluate(() => {
       const g = (window as any).__game;
@@ -88,7 +89,7 @@ test.describe('S11.0 — HP potions on map', () => {
         .map((c: any) => c.text as string)
         .find((t: string) => t.startsWith('HP:')) ?? '';
     });
-    expect(hpLabel).toBe('HP: 10/10');
+    expect(hpLabel).toBe('HP: 28/28');
 
     // Potion sprite should be removed
     const potionCount = await countPotionSprites(page);

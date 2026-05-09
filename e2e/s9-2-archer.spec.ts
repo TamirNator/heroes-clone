@@ -90,7 +90,7 @@ test.describe('S9.2 — Archer ranged enemy', () => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(initialHp).toBe(10);
+    expect(initialHp).toBe(28);
 
     await clickEndTurn(page);
     await waitForAnimating(page, false);

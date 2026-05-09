@@ -110,7 +110,8 @@ test.describe('S6.3 — random damage rolls', () => {
       return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
     });
 
-    // 3 attacks: Troll 8→5→2→0; hero takes 2 retaliations × 2 = 4 dmg → 10→8→6
+    // 3 attacks: Troll 8→5→2→0; Swordsmen takes 2 retaliations × 2 = 4 dmg → 20→18→16
+    // Total hero HP: 28→26→24
     for (let i = 0; i < 3; i++) {
       await page.mouse.click(attackPos.x, attackPos.y);
       await page.waitForTimeout(600);
@@ -131,7 +132,7 @@ test.describe('S6.3 — random damage rolls', () => {
       return { heroHp: combat.heroHp as number, enemyHp: combat.enemyHp as number };
     });
 
-    expect(combatState.heroHp).toBe(6);
+    expect(combatState.heroHp).toBe(24); // 28 - 4 (two Troll retaliations × 2)
     expect(combatState.enemyHp).toBe(0);
   });
 });

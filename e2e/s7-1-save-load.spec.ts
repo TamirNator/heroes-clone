@@ -61,7 +61,7 @@ async function defeatGoblin(page: any) {
     const texts: string[] = combat.children.list
       .filter((c: any) => c.type === 'Text')
       .map((c: any) => c.text as string);
-    return texts.some(t => t === 'HP: 9');
+    return texts.some(t => t === 'HP: 19/20'); // Swordsmen HP 20→19 after 1 Goblin hit
   }, null, { timeout: 3000 });
 
   await page.mouse.click(attackPos.x, attackPos.y);

@@ -64,7 +64,7 @@ test.describe('S5.1 — combat attack loop', () => {
       return { x: rect.left + 320 * scaleX, y: rect.top + 530 * scaleY };
     });
 
-    // Round 1: hero hits Goblin 3→1, Goblin retaliates hero 10→9
+    // Round 1: hero hits Goblin 3→1, Goblin retaliates Swordsmen 20→19
     await page.mouse.click(attackPos.x, attackPos.y);
 
     await page.waitForFunction(() => {
@@ -88,14 +88,14 @@ test.describe('S5.1 — combat attack loop', () => {
     });
     expect(afterRound1.enemyHp1).toBe(true);
 
-    // Wait for retaliation to complete before next click
+    // Wait for retaliation to complete before next click (Swordsmen HP 20→19)
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
       const texts: string[] = combat.children.list
         .filter((c: any) => c.type === 'Text')
         .map((c: any) => c.text as string);
-      return texts.some(t => t === 'HP: 9');
+      return texts.some(t => t === 'HP: 19/20');
     }, null, { timeout: 2000 });
 
     // Round 2: hero hits Goblin 1→0 → VICTORY, no retaliation

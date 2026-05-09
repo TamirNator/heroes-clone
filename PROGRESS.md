@@ -21,6 +21,16 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S13.1 — Hero army with TWO unit stacks (closes v1.1)
+**Coder:** Hero is now an army of 2 stacks: **Swordsmen** (count 5, HP 4/unit, dmg 1-3, total HP 20) + **Archers** (count 4, HP 2/unit, dmg 2-4, total HP 8). Total hero HP = 28 (up from 10). Stored in `registry["heroArmy"]` as `HeroStackState[]`, persisted to `SaveData.heroArmy`. Legacy `registry.heroHp` kept as derived sum.
+**CombatScene:** two hero circles side-by-side (240, 360) and (400, 360), radius 40, gold variants. Active stack (default Swordsmen) shows thick yellow stroke; click another circle to switch. `rollHeroDamage` reads active stack's dmg range. Lunge animation uses active sprite. Enemy retaliation damages active stack's `currentHp`. Auto-switch to next living stack on death; defeat when all stacks dead.
+**Level-up:** each stack `count += 1` and `currentHp += hpPerUnit`.
+**Tests:** 11 existing test files updated for new HP totals (20/8 stacks vs old single 10). New `s13-1-hero-army.spec.ts` covers initial army shape, active toggle, Archers-active damage, retaliation reduces Swordsmen count.
+**Verification:** all 42 tests pass (50.8s). PM verified screenshot showing two distinct stacks with active outline.
+**Status:** ✅ shipped — closes v1.1 (multi-stack combat foundation).
+
+---
+
 ## S13.0 — Stack-of-units representation (v1.1 kickoff)
 **Coder:** Removed `Enemy.hp` field, replaced with `stackCount` + `hpPerUnit` (totals preserved: Goblin 3×1, Orc 5×1, Troll 4×2, Wolf 2×2, Archer 3×1). `unitsRemaining(currentHp, hpPerUnit)` helper computes living units from `Math.ceil`. CombatScene displays `"Name  xN"` integrated into the existing stack name label (initial badge attempt at y=420 overlapped HP bar — fixed by inlining into name row at y=280).
 **Verification:** new e2e `s13-0-stacks.spec.ts` confirms initial badges (Hero x10, Troll x4) and updates after damage. All 38 tests pass (42.9s).

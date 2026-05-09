@@ -18,7 +18,7 @@ async function getHpLabelText(page: any): Promise<string> {
   });
 }
 
-async function clickAttackAndWaitForRetaliation(page: any, expectedHeroHpText: string) {
+async function clickAttackAndWaitForHeroHpText(page: any, expectedHeroHpText: string) {
   const attackPos = await page.evaluate(() => {
     const g = (window as any).__game;
     const cvs: HTMLCanvasElement = g.canvas;
@@ -46,15 +46,15 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     await page.reload();
     await waitForScene(page, 'MapScene');
 
-    // Step 1: verify fresh HP label "HP: 10/10"
+    // Step 1: verify fresh HP label "HP: 28/28" (default army: Swordsmen 5×4=20 + Archers 4×2=8)
     const initialLabel = await getHpLabelText(page);
-    expect(initialLabel).toBe('HP: 10/10');
+    expect(initialLabel).toBe('HP: 28/28');
 
     const initialRegistryHp = await page.evaluate(() => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(initialRegistryHp).toBe(10);
+    expect(initialRegistryHp).toBe(28);
 
     // Step 2: pin rolls, teleport adjacent to Goblin, defeat it
     await page.evaluate(() => {
@@ -91,8 +91,8 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
       combat.rollEnemyDamage = () => 1;
     });
 
-    // Round 1: hero hits Goblin 3→1, Goblin retaliates hero 10→9
-    await clickAttackAndWaitForRetaliation(page, 'HP: 9');
+    // Round 1: hero hits Goblin 3→1, Goblin retaliates Swordsmen 20→19
+    await clickAttackAndWaitForHeroHpText(page, 'HP: 19/20');
 
     // Round 2: hero kills Goblin, VICTORY
     const attackPos = await page.evaluate(() => {
@@ -116,17 +116,17 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
 
     await waitForScene(page, 'MapScene');
 
-    // Step 3: HP label should read "HP: 9/10", registry should be 9
+    // Step 3: HP label should read "HP: 27/28" (Swordsmen HP 20-1=19, Archers HP 8, total 27)
     const afterGoblinLabel = await getHpLabelText(page);
-    expect(afterGoblinLabel).toBe('HP: 9/10');
+    expect(afterGoblinLabel).toBe('HP: 27/28');
 
     const afterGoblinRegistryHp = await page.evaluate(() => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(afterGoblinRegistryHp).toBe(9);
+    expect(afterGoblinRegistryHp).toBe(27);
 
-    // Step 4: teleport adjacent to Orc, start combat — verify hero enters with HP 9
+    // Step 4: teleport adjacent to Orc, start combat — verify hero enters with total HP 27
     await page.evaluate(() => {
       const g = (window as any).__game;
       const map = g.scene.getScene('MapScene') as any;
@@ -153,16 +153,16 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     await page.mouse.click(orcPos.x, orcPos.y);
     await waitForScene(page, 'CombatScene');
 
-    // Verify CombatScene starts with heroHp=9, not 10
+    // Verify CombatScene starts with total heroHp=27 (Swordsmen 19 + Archers 8)
     const combatHeroHp = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
-      return combat.heroHp as number;
+      return combat.heroHp as number; // getter sums army currentHp
     });
-    expect(combatHeroHp).toBe(9);
+    expect(combatHeroHp).toBe(27);
 
-    // Step 5: defeat Orc — 3 attacks (Orc HP 5, hero dmg 2), 2 retaliations (Orc dmg 1)
-    // Hero: 9 → 8 → 7, Orc: 5 → 3 → 1 → 0
+    // Step 5: defeat Orc (HP=5, 3 attacks × 2 = 6 ≥ 5), 2 Orc retaliations × 1 dmg
+    // Swordsmen HP: 19→18→17. Total: 27→26→25
     await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
@@ -170,10 +170,10 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
       combat.rollEnemyDamage = () => 1;
     });
 
-    await clickAttackAndWaitForRetaliation(page, 'HP: 8');
-    await clickAttackAndWaitForRetaliation(page, 'HP: 7');
+    await clickAttackAndWaitForHeroHpText(page, 'HP: 18/20');
+    await clickAttackAndWaitForHeroHpText(page, 'HP: 17/20');
 
-    // Round 3: hero kills Orc
+    // Round 3: hero kills Orc (Orc HP 5→3→1→0)
     await page.mouse.click(attackPos.x, attackPos.y);
     await page.waitForFunction(() => {
       const g = (window as any).__game;
@@ -187,17 +187,19 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
 
     await page.screenshot({ path: 'test-results/s9-1-after-two-fights.png' });
 
-    // Step 6: after two fights, HP should be 10/13 (leveled up: 7 + delta 3 from level 2)
+    // Step 6: after two fights + XP 2+4=6 → level up to 2.
+    // Level-up: +1 count per stack. Swordsmen count 6, +4 HP (17→21). Archers count 5, +2 HP (8→10).
+    // Total HP = 31. Max HP = 6×4+5×2=34.
     const afterOrcLabel = await getHpLabelText(page);
-    expect(afterOrcLabel).toBe('HP: 10/13');
+    expect(afterOrcLabel).toBe('HP: 31/34');
 
     const afterOrcRegistryHp = await page.evaluate(() => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(afterOrcRegistryHp).toBe(10);
+    expect(afterOrcRegistryHp).toBe(31);
 
-    // Step 7: click Reset, HP should return to 10
+    // Step 7: click Reset, HP should return to 28/28
     const canvas = page.locator('canvas');
     await canvas.click({ position: { x: 1210, y: 125 } });
 
@@ -208,12 +210,12 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     }, null, { timeout: 5000 });
 
     const afterResetLabel = await getHpLabelText(page);
-    expect(afterResetLabel).toBe('HP: 10/10');
+    expect(afterResetLabel).toBe('HP: 28/28');
 
     const afterResetRegistryHp = await page.evaluate(() => {
       const g = (window as any).__game;
       return g.registry.get('heroHp') as number;
     });
-    expect(afterResetRegistryHp).toBe(10);
+    expect(afterResetRegistryHp).toBe(28);
   });
 });

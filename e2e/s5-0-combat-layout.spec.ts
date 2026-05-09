@@ -60,9 +60,9 @@ test.describe('S5.0 — combat scene visual layout', () => {
 
     expect(layout.arcFills).toContain(0xffcc44);
     expect(layout.arcFills).toContain(0xcc4444);
-    expect(layout.texts.some(t => t.includes('HP: 10'))).toBe(true);
+    expect(layout.texts.some(t => t.includes('HP: 20'))).toBe(true); // Swordsmen HP 20/20
     expect(layout.texts.some(t => t.includes('HP: 3'))).toBe(true);
-    expect(layout.texts.some(t => t.includes('Hero'))).toBe(true);
+    expect(layout.texts.some(t => t.includes('Swordsmen'))).toBe(true);
     expect(layout.texts.some(t => t.includes('Goblin'))).toBe(true);
 
     // Click Return button and confirm back to MapScene

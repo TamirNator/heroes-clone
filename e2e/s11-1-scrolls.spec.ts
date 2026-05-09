@@ -80,9 +80,10 @@ test.describe('S11.1 — XP scrolls on map', () => {
     const heroLevel = await page.evaluate(() => (window as any).__game.registry.get('heroLevel') as number);
     expect(heroLevel).toBe(2);
 
-    // maxHp at level 2 is 13; hero healed delta (+3): initial 10 + 3 = 13
+    // Level-up: +1 count per stack. Swordsmen count 6, +4 HP (20→24). Archers count 5, +2 HP (8→10).
+    // Total HP = 34.
     const heroHp = await page.evaluate(() => (window as any).__game.registry.get('heroHp') as number);
-    expect(heroHp).toBe(13);
+    expect(heroHp).toBe(34);
 
     // Scroll sprite should be removed
     const scrollCount = await countScrollSprites(page);

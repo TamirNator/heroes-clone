@@ -63,7 +63,7 @@ test.describe('S7.2 — HP bars in CombatScene', () => {
     });
 
     expect(initialBars.rectCount).toBeGreaterThanOrEqual(4);
-    expect(initialBars.heroWidth).toBe(160);
+    expect(initialBars.heroWidth).toBe(100); // hero stack bar is 100px wide
     expect(initialBars.enemyWidth).toBe(160);
 
     // Click Attack once (hero deals 2 to Troll HP 8 → 6)
@@ -78,14 +78,14 @@ test.describe('S7.2 — HP bars in CombatScene', () => {
 
     await page.mouse.click(attackPos.x, attackPos.y);
 
-    // Wait for retaliation to complete (hero takes 2 from Troll → HP 10→8)
+    // Wait for retaliation to complete (Swordsmen takes 2 from Troll → HP 20→18; Troll HP 8→6)
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
       const texts: string[] = combat.children.list
         .filter((c: any) => c.type === 'Text')
         .map((c: any) => c.text as string);
-      return texts.some(t => t === 'HP: 8') && texts.some(t => t === 'HP: 6');
+      return texts.some(t => t === 'HP: 18/20') && texts.some(t => t === 'HP: 6');
     }, null, { timeout: 3000 });
 
     await page.screenshot({ path: 'test-results/s7-2-bars-after-attack.png' });
@@ -104,7 +104,7 @@ test.describe('S7.2 — HP bars in CombatScene', () => {
 
     // Enemy bar: (8-2)/8 * 160 = 120
     expect(afterBars.enemyWidth).toBe(120);
-    // Hero bar: (10-2)/10 * 160 = 128
-    expect(afterBars.heroWidth).toBe(128);
+    // Hero bar (Swordsmen): (20-2)/20 * 100 = 90
+    expect(afterBars.heroWidth).toBe(90);
   });
 });

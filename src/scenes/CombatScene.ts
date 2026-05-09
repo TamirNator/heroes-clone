@@ -1,21 +1,40 @@
 import Phaser from "phaser";
 
+type HeroStackState = {
+  name: string;
+  count: number;
+  hpPerUnit: number;
+  damageMin: number;
+  damageMax: number;
+  currentHp: number;
+};
+
 function unitsRemaining(currentHp: number, hpPerUnit: number): number {
   return Math.ceil(currentHp / hpPerUnit);
 }
 
-const HERO_HP = 10;
+const HERO_HP = 10; // legacy defeat-signal constant
 const ENEMY_HP_DEFAULT = 5;
-const HERO_DAMAGE_MIN = 1;
-const HERO_DAMAGE_MAX = 3;
-const BAR_WIDTH = 160;
+const HERO_STACK_X = [240, 400] as const;
+const HERO_STACK_FILLS = [0xffcc44, 0xddaa33] as const;
+const HERO_BAR_WIDTH = 100;
+const BAR_WIDTH = 160; // enemy bar
 const BAR_HEIGHT = 14;
 const BAR_Y = 425;
 
+const DEFAULT_HERO_ARMY: HeroStackState[] = [
+  { name: "Swordsmen", count: 5, hpPerUnit: 4, damageMin: 1, damageMax: 3, currentHp: 20 },
+  { name: "Archers", count: 4, hpPerUnit: 2, damageMin: 2, damageMax: 4, currentHp: 8 },
+];
+
 export class CombatScene extends Phaser.Scene {
-  private heroHp = HERO_HP;
+  public heroArmy: HeroStackState[] = [];
+  private activeStackIndex = 0;
+  private heroSprites: Phaser.GameObjects.Arc[] = [];
+  private heroStackLabels: Phaser.GameObjects.Text[] = [];
+  private heroHpTexts: Phaser.GameObjects.Text[] = [];
+  private heroBarFills: Phaser.GameObjects.Rectangle[] = [];
   private enemyHp = ENEMY_HP_DEFAULT;
-  private heroMaxHp = HERO_HP;
   private enemyMaxHp = ENEMY_HP_DEFAULT;
   private enemyDamageMin = 1;
   private enemyDamageMax = 1;
@@ -23,15 +42,12 @@ export class CombatScene extends Phaser.Scene {
   private isCombatAnimating = false;
   private enemyHpPerUnit = 1;
   private enemyName = "Enemy";
-  private heroSprite!: Phaser.GameObjects.Arc;
   private enemySprite!: Phaser.GameObjects.Arc;
-  private heroHpText!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
-  private heroStackLabel!: Phaser.GameObjects.Text;
   private enemyStackLabel!: Phaser.GameObjects.Text;
-  private heroBarFill!: Phaser.GameObjects.Rectangle;
   private enemyBarFill!: Phaser.GameObjects.Rectangle;
   private attackBtn!: Phaser.GameObjects.Rectangle;
+
   initData: {
     enemyCol?: number;
     enemyRow?: number;
@@ -43,14 +59,30 @@ export class CombatScene extends Phaser.Scene {
     enemyHpPerUnit?: number;
     enemyDamageMin?: number;
     enemyDamageMax?: number;
-    heroHp?: number;
-    heroDamageMin?: number;
-    heroDamageMax?: number;
+    heroArmy?: HeroStackState[];
     xpReward?: number;
   } = {};
 
-  public rollHeroDamage: () => number = () =>
-    Phaser.Math.Between(HERO_DAMAGE_MIN, HERO_DAMAGE_MAX);
+  // Back-compat getter: total hero HP across all stacks
+  get heroHp(): number {
+    return this.heroArmy.reduce((s, u) => s + u.currentHp, 0);
+  }
+
+  // Back-compat getter: returns active hero stack's sprite
+  get heroSprite(): Phaser.GameObjects.Arc {
+    return this.heroSprites[this.activeStackIndex]!;
+  }
+
+  // Back-compat getter: first hero stack label (used by s13-0 tests)
+  get heroStackLabel(): Phaser.GameObjects.Text {
+    return this.heroStackLabels[0]!;
+  }
+
+  public rollHeroDamage: () => number = () => {
+    const stack = this.heroArmy[this.activeStackIndex];
+    if (!stack) return 0;
+    return Phaser.Math.Between(stack.damageMin, stack.damageMax);
+  };
   public rollEnemyDamage: () => number = () =>
     Phaser.Math.Between(this.enemyDamageMin, this.enemyDamageMax);
 
@@ -69,17 +101,19 @@ export class CombatScene extends Phaser.Scene {
     enemyHpPerUnit?: number;
     enemyDamageMin?: number;
     enemyDamageMax?: number;
-    heroHp?: number;
-    heroDamageMin?: number;
-    heroDamageMax?: number;
+    heroArmy?: HeroStackState[];
     xpReward?: number;
   }): void {
     this.initData = data ?? {};
   }
 
   create(): void {
-    this.heroHp = this.initData.heroHp ?? HERO_HP;
-    this.heroMaxHp = HERO_HP;
+    this.heroArmy = (this.initData.heroArmy ?? DEFAULT_HERO_ARMY).map(u => ({ ...u }));
+    this.activeStackIndex = 0;
+    this.heroSprites = [];
+    this.heroStackLabels = [];
+    this.heroHpTexts = [];
+    this.heroBarFills = [];
     this.enemyHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
     this.enemyMaxHp = this.initData.enemyHp ?? ENEMY_HP_DEFAULT;
     this.enemyHpPerUnit = this.initData.enemyHpPerUnit ?? 1;
@@ -88,27 +122,63 @@ export class CombatScene extends Phaser.Scene {
     this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
     this.isCombatAnimating = false;
-    const heroDmgMin = this.initData.heroDamageMin ?? HERO_DAMAGE_MIN;
-    const heroDmgMax = this.initData.heroDamageMax ?? HERO_DAMAGE_MAX;
-    this.rollHeroDamage = () => Phaser.Math.Between(heroDmgMin, heroDmgMax);
+    this.rollHeroDamage = () => {
+      const stack = this.heroArmy[this.activeStackIndex];
+      if (!stack) return 0;
+      return Phaser.Math.Between(stack.damageMin, stack.damageMax);
+    };
     this.rollEnemyDamage = () => Phaser.Math.Between(this.enemyDamageMin, this.enemyDamageMax);
 
     this.cameras.main.setBackgroundColor("#1a0a0a");
 
-    // Hero stack (left)
-    this.heroStackLabel = this.add.text(320, 280, this.formatStackLabel("Hero", this.heroHp), { fontSize: "20px", color: "#ffcc44" }).setOrigin(0.5);
-    this.heroSprite = this.add.circle(320, 360, 50, 0xffcc44).setStrokeStyle(2, 0x222222);
-    this.heroHpText = this.add.text(320, 455, `HP: ${this.heroHp}`, { fontSize: "24px", color: "#ffcc44" }).setOrigin(0.5);
+    // Hero stacks (left side, two stacks)
+    for (let i = 0; i < this.heroArmy.length; i++) {
+      const stack = this.heroArmy[i]!;
+      const sx = HERO_STACK_X[i]!;
+      const fill = HERO_STACK_FILLS[i] ?? 0xffcc44;
+      const strokeW = i === this.activeStackIndex ? 4 : 2;
+      const strokeColor = i === this.activeStackIndex ? 0xffff44 : 0x222222;
+
+      const label = this.add
+        .text(sx, 280, this.formatStackLabel(stack.name, unitsRemaining(stack.currentHp, stack.hpPerUnit)), {
+          fontSize: "18px",
+          color: "#ffcc44",
+        })
+        .setOrigin(0.5);
+      this.heroStackLabels.push(label);
+
+      const sprite = this.add
+        .circle(sx, 360, 40, fill)
+        .setStrokeStyle(strokeW, strokeColor)
+        .setInteractive();
+      this.heroSprites.push(sprite);
+
+      const stackMax = stack.count * stack.hpPerUnit;
+      const hpText = this.add
+        .text(sx, 450, `HP: ${stack.currentHp}/${stackMax}`, { fontSize: "18px", color: "#ffcc44" })
+        .setOrigin(0.5);
+      this.heroHpTexts.push(hpText);
+
+      const capturedI = i;
+      sprite.on("pointerdown", () => this.selectStack(capturedI));
+    }
 
     // Enemy stack (right)
-    this.enemyStackLabel = this.add.text(960, 280, this.formatStackLabel(this.enemyName, unitsRemaining(this.enemyHp, this.enemyHpPerUnit)), { fontSize: "20px", color: "#cc4444" }).setOrigin(0.5);
+    this.enemyStackLabel = this.add
+      .text(960, 280, this.formatStackLabel(this.enemyName, unitsRemaining(this.enemyHp, this.enemyHpPerUnit)), {
+        fontSize: "20px",
+        color: "#cc4444",
+      })
+      .setOrigin(0.5);
     this.enemySprite = this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
-    this.enemyHpText = this.add.text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" }).setOrigin(0.5);
+    this.enemyHpText = this.add
+      .text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" })
+      .setOrigin(0.5);
 
     // VS
     this.add.text(640, 360, "VS", { fontSize: "32px", color: "#888888" }).setOrigin(0.5);
 
-    // Return button — rects[0]; top-left; passes enemy coords back so defeat is recorded.
+    // Return button — rects[0]
     const returnBtn = this.add
       .rectangle(120, 50, 160, 40, 0x2a3a4a)
       .setStrokeStyle(2, 0xffcc44)
@@ -119,15 +189,17 @@ export class CombatScene extends Phaser.Scene {
 
     returnBtn.on("pointerover", () => returnBtn.setFillStyle(0x4a6a8a));
     returnBtn.on("pointerout", () => returnBtn.setFillStyle(0x2a3a4a));
-    returnBtn.on("pointerdown", () => this.scene.start("MapScene", {
-      defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
-      defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
-      heroCol: this.initData.enemyCol,
-      heroRow: this.initData.enemyRow,
-      heroHp: this.heroHp,
-    }));
+    returnBtn.on("pointerdown", () =>
+      this.scene.start("MapScene", {
+        defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
+        defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
+        heroCol: this.initData.enemyCol,
+        heroRow: this.initData.enemyRow,
+        heroArmy: this.heroArmy,
+      })
+    );
 
-    // Attack button — rects[1]; below hero stack.
+    // Attack button — rects[1]
     this.attackBtn = this.add
       .rectangle(320, 530, 140, 40, 0x2a3a4a)
       .setStrokeStyle(2, 0xffcc44)
@@ -140,20 +212,42 @@ export class CombatScene extends Phaser.Scene {
     this.attackBtn.on("pointerout", () => this.attackBtn.setFillStyle(0x2a3a4a));
     this.attackBtn.on("pointerdown", () => this.onAttack());
 
-    // HP bars — added after buttons so rects[0/1] remain Return/Attack for existing tests.
-    // Hero bar: background then fill (rects[2], rects[3])
-    this.add.rectangle(320, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x222222)
-      .setStrokeStyle(1, 0x555555)
-      .setOrigin(0.5);
-    this.heroBarFill = this.add.rectangle(320 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x44cc44)
-      .setOrigin(0, 0.5);
+    // Hero HP bars — one per stack (added after buttons so rects[0/1] remain Return/Attack)
+    for (let i = 0; i < this.heroArmy.length; i++) {
+      const stack = this.heroArmy[i]!;
+      const sx = HERO_STACK_X[i]!;
+      this.add
+        .rectangle(sx, BAR_Y, HERO_BAR_WIDTH, 12, 0x222222)
+        .setStrokeStyle(1, 0x555555)
+        .setOrigin(0.5);
+      const fill = this.add
+        .rectangle(sx - HERO_BAR_WIDTH / 2, BAR_Y, HERO_BAR_WIDTH, 12, 0x44cc44)
+        .setOrigin(0, 0.5);
+      this.heroBarFills.push(fill);
+      // Initialise bar width based on current HP
+      const stackMax = stack.count * stack.hpPerUnit;
+      fill.displayWidth = Math.max(0, (stack.currentHp / stackMax) * HERO_BAR_WIDTH);
+    }
 
-    // Enemy bar: background then fill (rects[4], rects[5])
-    this.add.rectangle(960, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x222222)
+    // Enemy HP bar (rects[4], rects[5] relative to old layout — background + fill)
+    this.add
+      .rectangle(960, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0x222222)
       .setStrokeStyle(1, 0x555555)
       .setOrigin(0.5);
-    this.enemyBarFill = this.add.rectangle(960 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0xcc4444)
+    this.enemyBarFill = this.add
+      .rectangle(960 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0xcc4444)
       .setOrigin(0, 0.5);
+  }
+
+  private selectStack(index: number): void {
+    if (this.combatOver || index === this.activeStackIndex) return;
+    const stack = this.heroArmy[index];
+    if (!stack || stack.currentHp <= 0) return;
+
+    // Update outlines
+    this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
+    this.activeStackIndex = index;
+    this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
   }
 
   private formatStackLabel(name: string, count: number): string {
@@ -161,22 +255,33 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private spawnDamageText(x: number, y: number, amount: number): void {
-    const text = this.add.text(x, y, `-${amount}`, { fontSize: "28px", color: "#cc4444" }).setOrigin(0.5).setDepth(50);
+    const text = this.add
+      .text(x, y, `-${amount}`, { fontSize: "28px", color: "#cc4444" })
+      .setOrigin(0.5)
+      .setDepth(50);
     this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
   }
 
-  private shakeOnHit(target: "hero" | "enemy"): void {
+  private shakeOnHit(sprite: Phaser.GameObjects.Arc): void {
     if (this.combatOver) return;
-    const sprite = target === "hero" ? this.heroSprite : this.enemySprite;
     const origX = sprite.x;
     this.tweens.add({
-      targets: sprite, x: origX - 6, duration: 50, ease: "Linear",
+      targets: sprite,
+      x: origX - 6,
+      duration: 50,
+      ease: "Linear",
       onComplete: () => {
         this.tweens.add({
-          targets: sprite, x: origX + 6, duration: 50, ease: "Linear",
+          targets: sprite,
+          x: origX + 6,
+          duration: 50,
+          ease: "Linear",
           onComplete: () => {
             this.tweens.add({
-              targets: sprite, x: origX - 4, duration: 50, ease: "Linear",
+              targets: sprite,
+              x: origX - 4,
+              duration: 50,
+              ease: "Linear",
               onComplete: () => {
                 this.tweens.add({ targets: sprite, x: origX, duration: 50, ease: "Linear" });
               },
@@ -187,7 +292,11 @@ export class CombatScene extends Phaser.Scene {
     });
   }
 
-  private lungeAttack(attacker: "hero" | "enemy", onPeak: () => void, onLungeComplete?: () => void): void {
+  private lungeAttack(
+    attacker: "hero" | "enemy",
+    onPeak: () => void,
+    onLungeComplete?: () => void
+  ): void {
     const sprite = attacker === "hero" ? this.heroSprite : this.enemySprite;
     const origX = sprite.x;
     const offsetX = attacker === "hero" ? 80 : -80;
@@ -217,41 +326,66 @@ export class CombatScene extends Phaser.Scene {
     if (this.combatOver || this.isCombatAnimating) return;
     this.isCombatAnimating = true;
 
-    this.lungeAttack("hero", () => {
-      const dmg = this.rollHeroDamage();
-      this.enemyHp = Math.max(0, this.enemyHp - dmg);
-      this.enemyHpText.setText(`HP: ${this.enemyHp}`);
-      this.enemyStackLabel.setText(this.formatStackLabel(this.enemyName, unitsRemaining(this.enemyHp, this.enemyHpPerUnit)));
-      this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
-      this.spawnDamageText(960, 400, dmg);
-      this.shakeOnHit("enemy");
+    this.lungeAttack(
+      "hero",
+      () => {
+        const dmg = this.rollHeroDamage();
+        this.enemyHp = Math.max(0, this.enemyHp - dmg);
+        this.enemyHpText.setText(`HP: ${this.enemyHp}`);
+        this.enemyStackLabel.setText(
+          this.formatStackLabel(this.enemyName, unitsRemaining(this.enemyHp, this.enemyHpPerUnit))
+        );
+        this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
+        this.spawnDamageText(960, 400, dmg);
+        this.shakeOnHit(this.enemySprite);
 
-      if (this.enemyHp <= 0) {
-        this.combatOver = true;
-        this.attackBtn.setAlpha(0.5).disableInteractive();
-        this.showOutcome(true);
+        if (this.enemyHp <= 0) {
+          this.combatOver = true;
+          this.attackBtn.setAlpha(0.5).disableInteractive();
+          this.showOutcome(true);
+        }
+      },
+      () => {
+        if (!this.combatOver) {
+          this.time.delayedCall(400, () => this.enemyAttack());
+        }
       }
-    }, () => {
-      if (!this.combatOver) {
-        this.time.delayedCall(400, () => this.enemyAttack());
-      }
-    });
+    );
   }
 
   private enemyAttack(): void {
     this.lungeAttack("enemy", () => {
       const dmg = this.rollEnemyDamage();
-      this.heroHp = Math.max(0, this.heroHp - dmg);
-      this.heroHpText.setText(`HP: ${this.heroHp}`);
-      this.heroStackLabel.setText(this.formatStackLabel("Hero", this.heroHp));
-      this.heroBarFill.displayWidth = Math.max(0, (this.heroHp / this.heroMaxHp) * BAR_WIDTH);
-      this.spawnDamageText(320, 400, dmg);
-      this.shakeOnHit("hero");
+      const activeStack = this.heroArmy[this.activeStackIndex];
+      if (!activeStack) return;
 
-      if (this.heroHp <= 0) {
-        this.combatOver = true;
-        this.attackBtn.setAlpha(0.5).disableInteractive();
-        this.showOutcome(false);
+      activeStack.currentHp = Math.max(0, activeStack.currentHp - dmg);
+      const stackMax = activeStack.count * activeStack.hpPerUnit;
+      this.heroHpTexts[this.activeStackIndex]?.setText(
+        `HP: ${activeStack.currentHp}/${stackMax}`
+      );
+      this.heroStackLabels[this.activeStackIndex]?.setText(
+        this.formatStackLabel(activeStack.name, unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit))
+      );
+      this.heroBarFills[this.activeStackIndex]!.displayWidth = Math.max(
+        0,
+        (activeStack.currentHp / stackMax) * HERO_BAR_WIDTH
+      );
+      this.spawnDamageText(HERO_STACK_X[this.activeStackIndex]!, 400, dmg);
+      this.shakeOnHit(this.heroSprites[this.activeStackIndex]!);
+
+      if (activeStack.currentHp <= 0) {
+        // Auto-switch to next living stack
+        const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
+        if (nextAlive !== -1) {
+          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
+          this.activeStackIndex = nextAlive;
+          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
+        } else {
+          this.combatOver = true;
+          this.attackBtn.setAlpha(0.5).disableInteractive();
+          this.showOutcome(false);
+        }
       }
     });
   }
@@ -268,7 +402,7 @@ export class CombatScene extends Phaser.Scene {
           defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
           heroCol: this.initData.enemyCol,
           heroRow: this.initData.enemyRow,
-          heroHp: this.heroHp,
+          heroArmy: this.heroArmy,
           xpGained: this.initData.xpReward ?? 0,
         });
       } else {

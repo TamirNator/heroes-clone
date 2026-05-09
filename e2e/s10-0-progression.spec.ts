@@ -72,14 +72,14 @@ async function defeatEnemy(page: any, enemyKey: string, attacks: number) {
 }
 
 test.describe('S10.0 — hero XP + levels', () => {
-  test('initial state is Lvl 1, XP 0, HP 10/10', async ({ page }) => {
+  test('initial state is Lvl 1, XP 0, HP 28/28', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
 
     const hpLabel = await getHpLabelText(page);
-    expect(hpLabel).toBe('HP: 10/10');
+    expect(hpLabel).toBe('HP: 28/28'); // default army: 5×4 + 4×2 = 28
 
     const xpLabel = await getXpLabelText(page);
     expect(xpLabel).toBe('Lvl 1 • XP: 0/5');
@@ -94,7 +94,7 @@ test.describe('S10.0 — hero XP + levels', () => {
     });
     expect(registryState.xp).toBe(0);
     expect(registryState.level).toBe(1);
-    expect(registryState.hp).toBe(10);
+    expect(registryState.hp).toBe(28);
   });
 
   test('defeating Goblin grants 2 XP; defeating Orc levels up to Lvl 2', async ({ page }) => {
@@ -152,11 +152,13 @@ test.describe('S10.0 — hero XP + levels', () => {
     const afterOrcLevel = await page.evaluate(() => (window as any).__game.registry.get('heroLevel') as number);
     expect(afterOrcLevel).toBe(2);
 
+    // Level-up: +1 count per stack. Swordsmen count 6, +4 HP (was 20, now 24).
+    // Archers count 5, +2 HP (was 8, now 10). Total HP = 34. Max = 34.
     const afterOrcHp = await page.evaluate(() => (window as any).__game.registry.get('heroHp') as number);
-    expect(afterOrcHp).toBe(13); // max HP at level 2 (started full, stayed full, level-up healed delta)
+    expect(afterOrcHp).toBe(34); // enemy dmg=0, no damage taken, army leveled up to full
 
     const afterOrcHpLabel = await getHpLabelText(page);
-    expect(afterOrcHpLabel).toBe('HP: 13/13');
+    expect(afterOrcHpLabel).toBe('HP: 34/34');
 
     const afterOrcXpLabel = await getXpLabelText(page);
     expect(afterOrcXpLabel).toBe('Lvl 2 • XP: 6/12');

@@ -55,7 +55,7 @@ test.describe('S13.0 — stack-of-units representation in combat', () => {
     await page.mouse.click(trollPos.x, trollPos.y);
     await waitForScene(page, 'CombatScene');
 
-    // Verify initial stack labels: Troll stackCount=4, hpPerUnit=2; hero HP=10
+    // Verify initial stack labels: Troll stackCount=4; Swordsmen count=5
     const initialEnemyLabel = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
@@ -66,18 +66,18 @@ test.describe('S13.0 — stack-of-units representation in combat', () => {
     const initialHeroLabel = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
-      return combat.heroStackLabel.text as string;
+      return combat.heroStackLabels[0].text as string;
     });
-    expect(initialHeroLabel).toBe('Hero  x10');
+    expect(initialHeroLabel).toBe('Swordsmen  x5');
 
     await page.screenshot({ path: 'test-results/s13-0-initial-stacks.png' });
 
-    // Pin damage: hero hits for 3 (Troll HP 8→5, units ceil(5/2)=3), Troll hits for 1 (hero 10→9)
+    // Pin damage: hero hits for 3 (Troll HP 8→5, ceil(5/2)=3), Troll hits for 4 (Swordsmen 20→16, ceil(16/4)=4)
     await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
       combat.rollHeroDamage = () => 3;
-      combat.rollEnemyDamage = () => 1;
+      combat.rollEnemyDamage = () => 4;
     });
 
     // Round 1: click Attack, wait for lunge+retaliation to complete (~800ms total)
@@ -87,7 +87,7 @@ test.describe('S13.0 — stack-of-units representation in combat', () => {
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
-      return combat.enemyStackLabel?.text === 'Troll  x3' && combat.heroStackLabel?.text === 'Hero  x9';
+      return combat.enemyStackLabel?.text === 'Troll  x3' && combat.heroStackLabels[0]?.text === 'Swordsmen  x4';
     }, null, { timeout: 3000 });
 
     const afterRound1EnemyLabel = await page.evaluate(() => {
@@ -95,24 +95,24 @@ test.describe('S13.0 — stack-of-units representation in combat', () => {
       const combat = g.scene.getScene('CombatScene') as any;
       return combat.enemyStackLabel.text as string;
     });
-    expect(afterRound1EnemyLabel).toBe('Troll  x3'); // ceil(5/2) = 3
+    expect(afterRound1EnemyLabel).toBe('Troll  x3'); // ceil(5/2)=3
 
     const afterRound1HeroLabel = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
-      return combat.heroStackLabel.text as string;
+      return combat.heroStackLabels[0].text as string;
     });
-    expect(afterRound1HeroLabel).toBe('Hero  x9');
+    expect(afterRound1HeroLabel).toBe('Swordsmen  x4'); // ceil(16/4)=4
 
     await page.screenshot({ path: 'test-results/s13-0-mid-fight.png' });
 
-    // Round 2: Troll HP 5→2, units ceil(2/2)=1; hero 9→8
+    // Round 2: Troll HP 5→2, ceil(2/2)=1; Swordsmen 16→12, ceil(12/4)=3
     await clickAttackAndWait(page, 800);
 
     await page.waitForFunction(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
-      return combat.enemyStackLabel?.text === 'Troll  x1' && combat.heroStackLabel?.text === 'Hero  x8';
+      return combat.enemyStackLabel?.text === 'Troll  x1' && combat.heroStackLabels[0]?.text === 'Swordsmen  x3';
     }, null, { timeout: 3000 });
 
     expect(await page.evaluate(() => {
@@ -122,8 +122,8 @@ test.describe('S13.0 — stack-of-units representation in combat', () => {
 
     expect(await page.evaluate(() => {
       const g = (window as any).__game;
-      return (g.scene.getScene('CombatScene') as any).heroStackLabel.text as string;
-    })).toBe('Hero  x8');
+      return (g.scene.getScene('CombatScene') as any).heroStackLabels[0].text as string;
+    })).toBe('Swordsmen  x3');
 
     // Round 3: Troll HP 2→0 → VICTORY
     const attackPos = await page.evaluate(() => {
