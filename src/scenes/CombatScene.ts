@@ -52,6 +52,9 @@ export class CombatScene extends Phaser.Scene {
   private logText!: Phaser.GameObjects.Text;
   public roundNumber = 1;
   private roundText!: Phaser.GameObjects.Text;
+  public autoAttack = false;
+  private autoBtn!: Phaser.GameObjects.Rectangle;
+  private autoBtnText!: Phaser.GameObjects.Text;
 
   initData: {
     enemyCol?: number;
@@ -129,6 +132,7 @@ export class CombatScene extends Phaser.Scene {
     this.isCombatAnimating = false;
     this.logLines = [];
     this.roundNumber = 1;
+    this.autoAttack = false;
     this.rollHeroDamage = () => {
       const stack = this.heroArmy[this.activeStackIndex];
       if (!stack) return 0;
@@ -229,6 +233,23 @@ export class CombatScene extends Phaser.Scene {
     this.attackBtn.on("pointerout", () => this.attackBtn.setFillStyle(0x2a3a4a));
     this.attackBtn.on("pointerdown", () => this.onAttack());
 
+    // AUTO toggle button to right of Attack
+    this.autoBtn = this.add
+      .rectangle(470, 530, 100, 40, 0x2a3a4a)
+      .setStrokeStyle(2, 0x888888)
+      .setOrigin(0.5)
+      .setInteractive();
+    this.autoBtnText = this.add
+      .text(470, 530, "AUTO", { fontSize: "18px", color: "#888888" })
+      .setOrigin(0.5);
+    this.autoBtn.on("pointerover", () => {
+      if (!this.autoAttack) this.autoBtn.setFillStyle(0x4a6a8a);
+    });
+    this.autoBtn.on("pointerout", () => {
+      this.autoBtn.setFillStyle(this.autoAttack ? 0x44cc44 : 0x2a3a4a);
+    });
+    this.autoBtn.on("pointerdown", () => this.toggleAuto());
+
     // Hero HP bars — one per stack (added after buttons so rects[0/1] remain Return/Attack)
     for (let i = 0; i < this.heroArmy.length; i++) {
       const stack = this.heroArmy[i]!;
@@ -266,6 +287,19 @@ export class CombatScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(6);
     this.addLogLine("Combat begins!");
+  }
+
+  private toggleAuto(): void {
+    if (this.combatOver) return;
+    this.autoAttack = !this.autoAttack;
+    this.autoBtn.setFillStyle(this.autoAttack ? 0x44cc44 : 0x2a3a4a);
+    this.autoBtn.setStrokeStyle(2, this.autoAttack ? 0x44cc44 : 0x888888);
+    this.autoBtnText.setColor(this.autoAttack ? "#ffffff" : "#888888");
+    if (this.autoAttack && !this.isCombatAnimating) {
+      this.time.delayedCall(200, () => {
+        if (this.autoAttack && !this.combatOver && !this.isCombatAnimating) this.onAttack();
+      });
+    }
   }
 
   private addLogLine(line: string): void {
@@ -434,6 +468,11 @@ export class CombatScene extends Phaser.Scene {
         if (!this.combatOver) {
           this.roundNumber += 1;
           this.roundText.setText(`Round ${this.roundNumber}`);
+          if (this.autoAttack) {
+            this.time.delayedCall(200, () => {
+              if (this.autoAttack && !this.combatOver && !this.isCombatAnimating) this.onAttack();
+            });
+          }
         }
       }
     );

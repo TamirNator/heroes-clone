@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S14.3 — Auto-attack toggle
+**PM (direct):** Added `public autoAttack` field + `autoBtn` Rectangle 100×40 at (470, 530) right of Attack. `toggleAuto()` flips the flag and recolors button green when on. After each `enemyAttack` lungeComplete, if `autoAttack && !combatOver`, schedules next `onAttack` via 200ms delayedCall. Button starts gray, lights green when active. Stops automatically on victory/defeat. Clicking button mid-combat starts immediate auto-loop.
+**Verification:** new e2e `s14-3-auto-attack.spec.ts` — toggle AUTO on, wait for `combatOver && logLines.includes("VICTORY!")` (auto drives 4 rounds vs Troll). All 46 tests pass (57.1s).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S14.2 — Round counter + scene-in fade
 **PM (direct):** Added `public roundNumber` field + `roundText` Text below VS, format `"Round N"`. Increments at end of each full hero+enemy exchange (in `enemyAttack` lunge `onLungeComplete`). Refactored `enemyAttack` to extract `doEnemyAttackPeak()` so the lungeAttack call has both `onPeak` and `onLungeComplete` callbacks. Added a 250ms black-overlay fade-out at scene start (depth 1000 Rectangle, alpha 1→0 tween, then destroyed).
 **Verification:** new e2e `s14-2-round-counter.spec.ts` — pin damage 1/1, click Attack, wait for `roundNumber === 2`, assert label "Round 2". All 45 tests pass (55.2s).
