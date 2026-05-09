@@ -55,6 +55,9 @@ export class CombatScene extends Phaser.Scene {
   public autoAttack = false;
   private autoBtn!: Phaser.GameObjects.Rectangle;
   private autoBtnText!: Phaser.GameObjects.Text;
+  public combatSpeed = 1;
+  private speedBtn!: Phaser.GameObjects.Rectangle;
+  private speedBtnText!: Phaser.GameObjects.Text;
 
   initData: {
     enemyCol?: number;
@@ -138,6 +141,7 @@ export class CombatScene extends Phaser.Scene {
     this.logLines = [];
     this.roundNumber = 1;
     this.autoAttack = false;
+    this.combatSpeed = 1;
     this.rollHeroDamage = () => {
       const stack = this.heroArmy[this.activeStackIndex];
       if (!stack) return 0;
@@ -265,6 +269,19 @@ export class CombatScene extends Phaser.Scene {
     });
     this.autoBtn.on("pointerdown", () => this.toggleAuto());
 
+    // Speed cycle button (1× → 2× → 4×)
+    this.speedBtn = this.add
+      .rectangle(620, 530, 100, 40, 0x2a3a4a)
+      .setStrokeStyle(2, 0x888888)
+      .setOrigin(0.5)
+      .setInteractive();
+    this.speedBtnText = this.add
+      .text(620, 530, "Speed: 1×", { fontSize: "16px", color: "#ffffff" })
+      .setOrigin(0.5);
+    this.speedBtn.on("pointerover", () => this.speedBtn.setFillStyle(0x4a6a8a));
+    this.speedBtn.on("pointerout", () => this.speedBtn.setFillStyle(0x2a3a4a));
+    this.speedBtn.on("pointerdown", () => this.cycleSpeed());
+
     // Keyboard shortcuts: A = Attack, O = toggle Auto, 1/2 = select stack, ESC = Return
     this.input.keyboard?.on("keydown-A", () => this.onAttack());
     this.input.keyboard?.on("keydown-O", () => this.toggleAuto());
@@ -319,6 +336,16 @@ export class CombatScene extends Phaser.Scene {
     this.addLogLine("Combat begins!");
   }
 
+  private cycleSpeed(): void {
+    this.combatSpeed = this.combatSpeed === 1 ? 2 : this.combatSpeed === 2 ? 4 : 1;
+    this.speedBtnText.setText(`Speed: ${this.combatSpeed}×`);
+  }
+
+  // Scale a duration by current speed (faster = shorter durations)
+  private scaled(ms: number): number {
+    return Math.max(1, Math.floor(ms / this.combatSpeed));
+  }
+
   private toggleAuto(): void {
     if (this.combatOver) return;
     this.autoAttack = !this.autoAttack;
@@ -358,19 +385,19 @@ export class CombatScene extends Phaser.Scene {
       .text(x, y, `-${amount}`, { fontSize: "28px", color: "#cc4444" })
       .setOrigin(0.5)
       .setDepth(50);
-    this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: 600, onComplete: () => text.destroy() });
+    this.tweens.add({ targets: text, y: y - 40, alpha: 0, duration: this.scaled(600), onComplete: () => text.destroy() });
   }
 
   private spawnDeathPuff(target: "hero" | "enemy", count: number): void {
     const sprite = target === "hero" ? this.heroSprites[this.activeStackIndex]! : this.enemySprite;
     const color = target === "hero" ? (HERO_STACK_FILLS[this.activeStackIndex] ?? 0xffcc44) : this.enemyColor;
     for (let i = 0; i < count; i++) {
-      this.time.delayedCall(i * 100, () => this.spawnSinglePuff(sprite, color));
+      this.time.delayedCall(this.scaled(i * 100), () => this.spawnSinglePuff(sprite, color));
     }
     // Camera shake scaled by kill count: 1 unit = subtle, 4+ units = forceful
     const intensity = Math.min(0.012, 0.003 + count * 0.002);
     const duration = Math.min(300, 120 + count * 40);
-    this.cameras.main.shake(duration, intensity);
+    this.cameras.main.shake(this.scaled(duration), intensity);
   }
 
   private spawnSinglePuff(sprite: Phaser.GameObjects.Arc, color: number): void {
@@ -388,7 +415,7 @@ export class CombatScene extends Phaser.Scene {
       scaleX: 2.5,
       scaleY: 2.5,
       alpha: 0,
-      duration: 400,
+      duration: this.scaled(400),
       ease: "Cubic.easeOut",
       onComplete: () => puff.destroy(),
     });
@@ -400,22 +427,22 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({
       targets: sprite,
       x: origX - 6,
-      duration: 50,
+      duration: this.scaled(50),
       ease: "Linear",
       onComplete: () => {
         this.tweens.add({
           targets: sprite,
           x: origX + 6,
-          duration: 50,
+          duration: this.scaled(50),
           ease: "Linear",
           onComplete: () => {
             this.tweens.add({
               targets: sprite,
               x: origX - 4,
-              duration: 50,
+              duration: this.scaled(50),
               ease: "Linear",
               onComplete: () => {
-                this.tweens.add({ targets: sprite, x: origX, duration: 50, ease: "Linear" });
+                this.tweens.add({ targets: sprite, x: origX, duration: this.scaled(50), ease: "Linear" });
               },
             });
           },
@@ -436,14 +463,14 @@ export class CombatScene extends Phaser.Scene {
     this.tweens.add({
       targets: sprite,
       x: origX + offsetX,
-      duration: 100,
+      duration: this.scaled(100),
       ease: "Cubic.easeOut",
       onComplete: () => {
         onPeak();
         this.tweens.add({
           targets: sprite,
           x: origX,
-          duration: 100,
+          duration: this.scaled(100),
           ease: "Cubic.easeIn",
           onComplete: () => {
             this.isCombatAnimating = false;
@@ -494,7 +521,7 @@ export class CombatScene extends Phaser.Scene {
       },
       () => {
         if (!this.combatOver) {
-          this.time.delayedCall(400, () => this.enemyAttack());
+          this.time.delayedCall(this.scaled(400), () => this.enemyAttack());
         }
       }
     );

@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S17.1 — Combat speed slider (closes v1.4)
+**PM (direct):** Added `public combatSpeed = 1` field + Speed button at (620, 530) right of AUTO button. Click cycles `1× → 2× → 4× → 1×`. New `scaled(ms)` helper divides ms by current speed. Applied to all combat tween durations: lunge (100ms), shake (4×50ms), puff (400ms), damage text (600ms), retaliation delay (400ms), camera shake. The 1500ms outcome→return delay kept as-is so player can read VICTORY/DEFEAT.
+**Verification:** new e2e `s17-1-combat-speed.spec.ts` clicks Speed button 3× and asserts `combatSpeed` cycles 1→2→4→1 with label updates. All 52 tests pass (2.5m).
+**Status:** ✅ shipped (PM direct) — closes v1.4 (title + help + speed).
+
+---
+
 ## S17.0 — In-game help overlay
 **PM (direct):** Press `H` (or `?`) on the map to toggle a help overlay listing all controls (map clicks, End Turn, Reset, combat A/1/2/O/ESC). Implemented as a `Phaser.GameObjects.Container` at depth 150 with dark Rectangle background + title + body Text + dismiss hint. `helpOverlay?: Container` field tracks open state. Click overlay background to close, or press `H` again. Hooked via `this.input.keyboard?.on("keydown-H", ...)` and `keydown-FORWARD_SLASH`.
 **Verification:** new e2e `s17-0-help-overlay.spec.ts` clicks canvas for focus then `keyboard.press('H')`, asserts `map.helpOverlay !== undefined`, presses again, asserts gone. All 51 tests pass (2.5m).
