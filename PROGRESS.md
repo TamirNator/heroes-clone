@@ -21,6 +21,15 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S15.1 — Enemy stack badge on map + Playwright sequential
+**PM (direct):** Each enemy on the map now has a small `"x3"` Text badge (12px white bold) at offset (+0.55r, +0.5r) from the circle. `LiveEnemy` type extended with `badge: Text`. Enemy AI tween in `runEnemyMultiStep` now also tweens the badge in parallel so the count follows the enemy as it moves.
+**Bonus:** set Playwright `workers: 1` in config — the test suite was occasionally flaking under parallel workers (Phaser game state shared via `window.__game` and localStorage). Sequential execution costs ~30s but is reliable.
+**Test stability fix:** `s12-1-damage-shake.spec.ts` — was racing the enemy retaliation lunge after S15.0's multi-circle layout shifted timing slightly. Updated to wait for `isCombatAnimating === false && |x - initX| < 1` rather than fixed `waitForTimeout(350)`.
+**Verification:** all 48 tests pass (2.4m sequential).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S15.0 — Enemy multi-stack rendering (v1.3 kickoff)
 **PM (direct):** Replaced single `enemySprite` field with `enemySprites: Arc[]`. CombatScene `create()` reads `initData.enemyStackCount` (already passed by MapScene since S13.0) and renders N circles centered around (960, 360) with adaptive radius (50/40/35 for N=1/2/3+) and 1.6× spacing. Back-compat getter `enemySprite` returns `enemySprites[0]` so existing code (lunge, shake, puffs, click coords) keeps working. On enemy damage, hides rightmost circles for dead units (`unitsRemaining` decreases → `setVisible(false)`).
 **Visual result:** Goblin (stackCount=3) renders as 3 red circles in a row; Troll (4) as 4; Wolves (2) as 2; Orc/Archer single. Each unit visibly disappears as combat progresses.

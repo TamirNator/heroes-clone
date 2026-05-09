@@ -81,11 +81,14 @@ test.describe('S12.1 — damage shake on hit', () => {
     // Take screenshot mid-shake
     await page.screenshot({ path: 'test-results/s12-1-mid-shake.png' });
 
-    // waitForFunction confirmed displacement > 2px — shake is running.
-    // Wait 350ms for the shake (200ms) to fully complete.
-    await page.waitForTimeout(350);
+    // Wait for the full combat animation (hero lunge + shake + enemy retaliation lunge + return) to settle.
+    // After all tweens complete, enemy sprite returns to its original x.
+    await page.waitForFunction((initX: number) => {
+      const g = (window as any).__game;
+      const combat = g.scene.getScene('CombatScene') as any;
+      return combat.isCombatAnimating === false && Math.abs(combat.enemySprite.x - initX) < 1;
+    }, initialEnemyX, { timeout: 3000 });
 
-    // Enemy sprite should have returned to original x
     const finalEnemyX = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;

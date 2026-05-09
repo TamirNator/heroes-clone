@@ -94,6 +94,7 @@ type LiveEnemy = {
   row: number;
   data: Enemy;
   sprite: Phaser.GameObjects.Arc;
+  badge: Phaser.GameObjects.Text;
 };
 
 type SaveData = {
@@ -310,7 +311,15 @@ export class MapScene extends Phaser.Scene {
         .circle(ex, ey, this.hexR * 0.45, fillColor)
         .setStrokeStyle(2, 0x222222)
         .setDepth(10);
-      this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite });
+      const badge = this.add
+        .text(ex + this.hexR * 0.55, ey + this.hexR * 0.5, `x${enemy.stackCount}`, {
+          fontSize: "12px",
+          color: "#ffffff",
+          fontStyle: "bold",
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(11);
+      this.liveEnemies.push({ col: enemy.col, row: enemy.row, data: enemy, sprite, badge });
     }
 
     // Render potions
@@ -561,6 +570,15 @@ export class MapScene extends Phaser.Scene {
     const nextStep = path[0]!;
     const { x, y } = this.hexCenter(nextStep.col, nextStep.row);
 
+    const badgeTargetX = x + this.hexR * 0.55;
+    const badgeTargetY = y + this.hexR * 0.5;
+    this.tweens.add({
+      targets: enemy.badge,
+      x: badgeTargetX,
+      y: badgeTargetY,
+      duration: 150,
+      ease: "Linear",
+    });
     this.tweens.add({
       targets: enemy.sprite,
       x,
