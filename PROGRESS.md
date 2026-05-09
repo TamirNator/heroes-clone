@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S16.0 — Camera shake on unit death
+**PM (direct):** Added `this.cameras.main.shake(duration, intensity)` in `spawnDeathPuff`. Intensity and duration scale with kill count (1 dead = subtle 120ms × 0.005, 4 dead = forceful 280ms × 0.011). Pairs with existing puff + sprite shake for visceral kill feedback.
+**No new test** — pure visual polish, no observable state change worth asserting beyond visual inspection. All 48 existing tests still pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S15.1 — Enemy stack badge on map + Playwright sequential
 **PM (direct):** Each enemy on the map now has a small `"x3"` Text badge (12px white bold) at offset (+0.55r, +0.5r) from the circle. `LiveEnemy` type extended with `badge: Text`. Enemy AI tween in `runEnemyMultiStep` now also tweens the badge in parallel so the count follows the enemy as it moves.
 **Bonus:** set Playwright `workers: 1` in config — the test suite was occasionally flaking under parallel workers (Phaser game state shared via `window.__game` and localStorage). Sequential execution costs ~30s but is reliable.

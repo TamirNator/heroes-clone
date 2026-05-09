@@ -367,6 +367,10 @@ export class CombatScene extends Phaser.Scene {
     for (let i = 0; i < count; i++) {
       this.time.delayedCall(i * 100, () => this.spawnSinglePuff(sprite, color));
     }
+    // Camera shake scaled by kill count: 1 unit = subtle, 4+ units = forceful
+    const intensity = Math.min(0.012, 0.003 + count * 0.002);
+    const duration = Math.min(300, 120 + count * 40);
+    this.cameras.main.shake(duration, intensity);
   }
 
   private spawnSinglePuff(sprite: Phaser.GameObjects.Arc, color: number): void {
