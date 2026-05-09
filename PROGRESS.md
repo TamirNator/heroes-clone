@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S15.0 — Enemy multi-stack rendering (v1.3 kickoff)
+**PM (direct):** Replaced single `enemySprite` field with `enemySprites: Arc[]`. CombatScene `create()` reads `initData.enemyStackCount` (already passed by MapScene since S13.0) and renders N circles centered around (960, 360) with adaptive radius (50/40/35 for N=1/2/3+) and 1.6× spacing. Back-compat getter `enemySprite` returns `enemySprites[0]` so existing code (lunge, shake, puffs, click coords) keeps working. On enemy damage, hides rightmost circles for dead units (`unitsRemaining` decreases → `setVisible(false)`).
+**Visual result:** Goblin (stackCount=3) renders as 3 red circles in a row; Troll (4) as 4; Wolves (2) as 2; Orc/Archer single. Each unit visibly disappears as combat progresses.
+**Verification:** new e2e `s15-0-enemy-stacks.spec.ts` confirms 3 enemy sprites for Goblin combat, then verifies rightmost hides after 1 unit kill. All 48 tests pass (1.1m).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S14.4 — Keyboard shortcuts in combat (closes v1.2)
 **PM (direct):** `A` = Attack, `O` = toggle Auto, `1`/`2` = select Swordsmen/Archers, `ESC` = Return to Map. Bound via `this.input.keyboard?.on("keydown-X", handler)`. Quality-of-life — no need to mouse-click for common combat actions.
 **Verification:** new e2e `s14-4-keyboard.spec.ts` — uses `page.keyboard.press('2')`, `'O'`, `'A'`, asserts state changes. All 47 tests pass (57.7s).

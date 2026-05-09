@@ -43,7 +43,7 @@ export class CombatScene extends Phaser.Scene {
   private enemyHpPerUnit = 1;
   private enemyName = "Enemy";
   private enemyColor = 0xcc4444;
-  private enemySprite!: Phaser.GameObjects.Arc;
+  private enemySprites: Phaser.GameObjects.Arc[] = [];
   private enemyHpText!: Phaser.GameObjects.Text;
   private enemyStackLabel!: Phaser.GameObjects.Text;
   private enemyBarFill!: Phaser.GameObjects.Rectangle;
@@ -79,6 +79,11 @@ export class CombatScene extends Phaser.Scene {
   // Back-compat getter: returns active hero stack's sprite
   get heroSprite(): Phaser.GameObjects.Arc {
     return this.heroSprites[this.activeStackIndex]!;
+  }
+
+  // Back-compat getter: front (leftmost) enemy sprite
+  get enemySprite(): Phaser.GameObjects.Arc {
+    return this.enemySprites[0]!;
   }
 
   // Back-compat getter: first hero stack label (used by s13-0 tests)
@@ -181,7 +186,17 @@ export class CombatScene extends Phaser.Scene {
         color: "#cc4444",
       })
       .setOrigin(0.5);
-    this.enemySprite = this.add.circle(960, 360, 50, 0xcc4444).setStrokeStyle(2, 0x222222);
+    this.enemySprites = [];
+    const stackCount = this.initData.enemyStackCount ?? 1;
+    const enemyR = stackCount === 1 ? 50 : stackCount === 2 ? 40 : 35;
+    const spacing = enemyR * 1.6;
+    const startX = 960 - ((stackCount - 1) / 2) * spacing;
+    for (let i = 0; i < stackCount; i++) {
+      const sprite = this.add
+        .circle(startX + i * spacing, 360, enemyR, this.enemyColor)
+        .setStrokeStyle(2, 0x222222);
+      this.enemySprites.push(sprite);
+    }
     this.enemyHpText = this.add
       .text(960, 455, `HP: ${this.enemyHp}`, { fontSize: "24px", color: "#cc4444" })
       .setOrigin(0.5);
@@ -455,6 +470,12 @@ export class CombatScene extends Phaser.Scene {
         this.shakeOnHit(this.enemySprite);
         const killed = unitsRemaining(oldEnemyHp, this.enemyHpPerUnit) - unitsRemaining(newEnemyHp, this.enemyHpPerUnit);
         if (killed > 0) this.spawnDeathPuff("enemy", killed);
+
+        // Hide enemy circles for dead units (rightmost first)
+        const aliveCount = unitsRemaining(this.enemyHp, this.enemyHpPerUnit);
+        for (let i = aliveCount; i < this.enemySprites.length; i++) {
+          this.enemySprites[i]?.setVisible(false);
+        }
 
         const activeName = this.heroArmy[this.activeStackIndex]?.name ?? "Hero";
         const killSuffix = killed > 0 ? ` (Killed ${killed})` : "";
