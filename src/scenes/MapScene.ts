@@ -453,6 +453,13 @@ export class MapScene extends Phaser.Scene {
       .text(1280 - 20, 225, `DMG: ${firstStack.damageMin}-${firstStack.damageMax}`, { fontSize: "16px", color: "#ffcc44" })
       .setOrigin(1, 0)
       .setDepth(20);
+
+    // Enemies remaining counter
+    const remaining = ENEMIES.length - (this.registry.get("defeatedEnemies") as Set<string>).size;
+    this.add
+      .text(1280 - 20, 250, `Enemies: ${remaining}/${ENEMIES.length}`, { fontSize: "14px", color: "#cc8888" })
+      .setOrigin(1, 0)
+      .setDepth(20);
   }
 
   private toggleHelp(): void {
