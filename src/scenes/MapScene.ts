@@ -787,7 +787,36 @@ export class MapScene extends Phaser.Scene {
   }
 
   private terrainAt(col: number, row: number): Terrain {
+    const random = this.registry.get("randomTerrain") as Record<string, Terrain> | undefined;
+    if (random) return random[`${col},${row}`] ?? "grass";
     return TERRAIN_OVERRIDES[`${col},${row}`] ?? "grass";
+  }
+
+  static generateRandomTerrain(): Record<string, Terrain> {
+    // Cells we must NOT block: hero spawn (0,0), all enemy spawns, all pickups.
+    const blocked = new Set<string>();
+    blocked.add("0,0");
+    for (const e of ENEMIES) blocked.add(`${e.col},${e.row}`);
+    for (const p of POTIONS) blocked.add(`${p.col},${p.row}`);
+    for (const s of SCROLLS) blocked.add(`${s.col},${s.row}`);
+
+    const overrides: Record<string, Terrain> = {};
+    const place = (terrain: Terrain, count: number) => {
+      let placed = 0;
+      let attempts = 0;
+      while (placed < count && attempts < count * 20) {
+        attempts++;
+        const col = Math.floor(Math.random() * COLS);
+        const row = Math.floor(Math.random() * ROWS);
+        const key = `${col},${row}`;
+        if (blocked.has(key) || overrides[key]) continue;
+        overrides[key] = terrain;
+        placed++;
+      }
+    };
+    place("water", 6 + Math.floor(Math.random() * 5)); // 6-10 water tiles
+    place("forest", 8 + Math.floor(Math.random() * 6)); // 8-13 forest tiles
+    return overrides;
   }
 
   private isPassable(col: number, row: number): boolean {

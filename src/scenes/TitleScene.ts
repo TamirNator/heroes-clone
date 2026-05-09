@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { MapScene } from "./MapScene";
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -35,23 +36,34 @@ export class TitleScene extends Phaser.Scene {
       buttonY += 70;
     }
     this.makeButton(640, buttonY, "New Game", "#ffcc44", () => {
-      try {
-        localStorage.removeItem("heroes-clone:save");
-      } catch {
-        /* ignore */
-      }
-      const game = this.game as Phaser.Game;
-      game.registry.remove("defeatedEnemies");
-      game.registry.remove("consumedPotions");
-      game.registry.remove("consumedScrolls");
-      game.registry.remove("heroHp");
-      game.registry.remove("heroXp");
-      game.registry.remove("heroLevel");
-      game.registry.remove("heroArmy");
+      this.clearAllProgress();
+      this.game.registry.remove("randomTerrain");
+      this.scene.start("MapScene", {});
+    });
+    buttonY += 70;
+    this.makeButton(640, buttonY, "Random Game", "#88ccff", () => {
+      this.clearAllProgress();
+      this.game.registry.set("randomTerrain", MapScene.generateRandomTerrain());
       this.scene.start("MapScene", {});
     });
     buttonY += 70;
     this.makeButton(640, buttonY, "About", "#888888", () => this.showAbout());
+  }
+
+  private clearAllProgress(): void {
+    try {
+      localStorage.removeItem("heroes-clone:save");
+    } catch {
+      /* ignore */
+    }
+    const game = this.game;
+    game.registry.remove("defeatedEnemies");
+    game.registry.remove("consumedPotions");
+    game.registry.remove("consumedScrolls");
+    game.registry.remove("heroHp");
+    game.registry.remove("heroXp");
+    game.registry.remove("heroLevel");
+    game.registry.remove("heroArmy");
   }
 
   private makeButton(x: number, y: number, label: string, color: string, onClick: () => void): void {

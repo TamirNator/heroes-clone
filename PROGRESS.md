@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S18.2 — Random map generator + "Random Game" button (v1.5)
+**PM (direct):** Added `MapScene.generateRandomTerrain()` static method — generates 6-10 water tiles + 8-13 forest tiles at random valid positions (avoids hero spawn, all enemy spawns, all pickup spots). Stored in `registry["randomTerrain"]`. `terrainAt(col, row)` checks the registry first, falls back to fixed `TERRAIN_OVERRIDES`. New TitleScene button "Random Game" (sky-blue) sets the registry entry then starts MapScene; "New Game" clears the entry to use the fixed map. Refactored TitleScene to share `clearAllProgress()` helper.
+**Verification:** new e2e `s18-2-random-map.spec.ts` — clicks Random Game button, asserts registry has randomTerrain with >10 entries, hero spawn (0,0) and Goblin spawn (4,4) still grass; clicks New Game, asserts no randomTerrain. All 54 tests pass (2.6m).
+**Status:** ✅ shipped — closes v1.5 (procedural replayability).
+
+---
+
 ## S18.1 — Last-combat-outcome banner on map
 **PM (direct):** CombatScene's victory/defeat path now passes `lastOutcome: "VICTORY: defeated Goblin (+2 XP)"` (or `"DEFEAT by Troll — hero respawned"`) back to MapScene via scene-data. MapScene `create()` reads it and renders a brief Text banner at top-center (y=30, 20px bold, green/red, black bg padding), holds 2s then alpha-tweens out over 600ms then destroys.
 **Verification:** all 52 tests pass — banner is purely additive UI shown only after combat-return scene transitions, no test currently asserts on it.
