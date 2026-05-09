@@ -250,6 +250,21 @@ export class CombatScene extends Phaser.Scene {
     });
     this.autoBtn.on("pointerdown", () => this.toggleAuto());
 
+    // Keyboard shortcuts: A = Attack, O = toggle Auto, 1/2 = select stack, ESC = Return
+    this.input.keyboard?.on("keydown-A", () => this.onAttack());
+    this.input.keyboard?.on("keydown-O", () => this.toggleAuto());
+    this.input.keyboard?.on("keydown-ONE", () => this.selectStack(0));
+    this.input.keyboard?.on("keydown-TWO", () => this.selectStack(1));
+    this.input.keyboard?.on("keydown-ESC", () =>
+      this.scene.start("MapScene", {
+        defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
+        defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
+        heroCol: this.initData.enemyCol,
+        heroRow: this.initData.enemyRow,
+        heroArmy: this.heroArmy,
+      })
+    );
+
     // Hero HP bars — one per stack (added after buttons so rects[0/1] remain Return/Attack)
     for (let i = 0; i < this.heroArmy.length; i++) {
       const stack = this.heroArmy[i]!;

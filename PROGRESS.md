@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S14.4 — Keyboard shortcuts in combat (closes v1.2)
+**PM (direct):** `A` = Attack, `O` = toggle Auto, `1`/`2` = select Swordsmen/Archers, `ESC` = Return to Map. Bound via `this.input.keyboard?.on("keydown-X", handler)`. Quality-of-life — no need to mouse-click for common combat actions.
+**Verification:** new e2e `s14-4-keyboard.spec.ts` — uses `page.keyboard.press('2')`, `'O'`, `'A'`, asserts state changes. All 47 tests pass (57.7s).
+**Status:** ✅ shipped — closes v1.2 (combat polish bundle: puffs + log + round counter + fade + auto + keyboard).
+
+---
+
 ## S14.3 — Auto-attack toggle
 **PM (direct):** Added `public autoAttack` field + `autoBtn` Rectangle 100×40 at (470, 530) right of Attack. `toggleAuto()` flips the flag and recolors button green when on. After each `enemyAttack` lungeComplete, if `autoAttack && !combatOver`, schedules next `onAttack` via 200ms delayedCall. Button starts gray, lights green when active. Stops automatically on victory/defeat. Clicking button mid-combat starts immediate auto-loop.
 **Verification:** new e2e `s14-3-auto-attack.spec.ts` — toggle AUTO on, wait for `combatOver && logLines.includes("VICTORY!")` (auto drives 4 rounds vs Troll). All 46 tests pass (57.1s).
