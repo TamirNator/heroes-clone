@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S19.0 — Random enemy positions on Random Game
+**PM (direct):** New `MapScene.generateRandomEnemySpawns(terrain?)` static — picks 6 spawn coords avoiding hero spawn (with 5×5 buffer for breathing room), pickups, water (if terrain provided). Falls back to default spawn on placement failure. Stored in `registry["randomEnemySpawns"]`. Enemy render loop reads override per index, builds an `Enemy` with random col/row but same stats, defeat key uses the random coord. TitleScene "Random Game" generates BOTH terrain + enemy spawns; "New Game" clears both.
+**Verification:** all 54 tests pass. Random Game now produces meaningfully different layouts each click.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S18.2 — Random map generator + "Random Game" button (v1.5)
 **PM (direct):** Added `MapScene.generateRandomTerrain()` static method — generates 6-10 water tiles + 8-13 forest tiles at random valid positions (avoids hero spawn, all enemy spawns, all pickup spots). Stored in `registry["randomTerrain"]`. `terrainAt(col, row)` checks the registry first, falls back to fixed `TERRAIN_OVERRIDES`. New TitleScene button "Random Game" (sky-blue) sets the registry entry then starts MapScene; "New Game" clears the entry to use the fixed map. Refactored TitleScene to share `clearAllProgress()` helper.
 **Verification:** new e2e `s18-2-random-map.spec.ts` — clicks Random Game button, asserts registry has randomTerrain with >10 entries, hero spawn (0,0) and Goblin spawn (4,4) still grass; clicks New Game, asserts no randomTerrain. All 54 tests pass (2.6m).

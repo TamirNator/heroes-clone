@@ -305,7 +305,12 @@ export class MapScene extends Phaser.Scene {
       .setStrokeStyle(2, HERO_STROKE)
       .setDepth(10);
 
-    for (const enemy of ENEMIES) {
+    const randomSpawns = this.registry.get("randomEnemySpawns") as Array<{ col: number; row: number }> | undefined;
+    for (let i = 0; i < ENEMIES.length; i++) {
+      const enemyDef = ENEMIES[i]!;
+      const spawn = randomSpawns?.[i] ?? { col: enemyDef.col, row: enemyDef.row };
+      // Defeat tracking key uses the effective spawn (random or default)
+      const enemy: Enemy = randomSpawns ? { ...enemyDef, col: spawn.col, row: spawn.row } : enemyDef;
       if (this.isDefeated(enemy.col, enemy.row)) continue;
       const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
       const fillColor = enemy.name === "Wolf" ? 0xff8844 : enemy.name === "Archer" ? 0xcccc44 : 0xcc4444;
@@ -817,6 +822,42 @@ export class MapScene extends Phaser.Scene {
     place("water", 6 + Math.floor(Math.random() * 5)); // 6-10 water tiles
     place("forest", 8 + Math.floor(Math.random() * 6)); // 8-13 forest tiles
     return overrides;
+  }
+
+  // Generate random spawn positions for each enemy, avoiding hero spawn,
+  // pickups, and any provided terrain overrides (so enemies don't spawn on water).
+  static generateRandomEnemySpawns(terrain?: Record<string, Terrain>): Array<{ col: number; row: number }> {
+    const used = new Set<string>();
+    used.add("0,0");
+    // Keep at least 3 hops away from hero spawn so the player has breathing room
+    for (let dc = -2; dc <= 2; dc++) {
+      for (let dr = -2; dr <= 2; dr++) {
+        used.add(`${dc},${dr}`);
+      }
+    }
+    for (const p of POTIONS) used.add(`${p.col},${p.row}`);
+    for (const s of SCROLLS) used.add(`${s.col},${s.row}`);
+
+    const result: Array<{ col: number; row: number }> = [];
+    for (let i = 0; i < ENEMIES.length; i++) {
+      let attempts = 0;
+      while (attempts < 200) {
+        attempts++;
+        const col = Math.floor(Math.random() * COLS);
+        const row = Math.floor(Math.random() * ROWS);
+        const key = `${col},${row}`;
+        if (used.has(key)) continue;
+        if (terrain && terrain[key] === "water") continue;
+        used.add(key);
+        result.push({ col, row });
+        break;
+      }
+      if (result.length <= i) {
+        // Fallback to default spawn if random placement failed
+        result.push({ col: ENEMIES[i]!.col, row: ENEMIES[i]!.row });
+      }
+    }
+    return result;
   }
 
   private isPassable(col: number, row: number): boolean {
