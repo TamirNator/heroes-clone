@@ -21,6 +21,17 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S14.1 — Combat log panel
+**PM (myself, direct edit):** CODER agent hit user's monthly Claude usage limit mid-task. PM implemented S14.1 directly in the main session.
+- New fields `public logLines: string[]` and `private logText`. 1200×120 dark Rectangle at (640, 660), text overlay at (60, 605).
+- `addLogLine(line)` pushes + caps at 6 visible lines.
+- Trigger points: `"Combat begins!"` on create; `"${activeStack} attack ${enemy} for ${dmg} damage. (Killed N)"` on hero hit; `"${activeStack} killed ${enemy}!"` on victory; `"${enemy} attacks ${activeStack} for ${dmg} damage."` on enemy hit; `"${activeStack} routed!"` on stack death; `"VICTORY!"` / `"DEFEAT"` from showOutcome.
+- VICTORY/DEFEAT text repositioned y=600→560 to clear the log panel's top edge.
+**Verification:** new e2e `s14-1-combat-log.spec.ts` covers initial log, full Goblin defeat sequence, expects 4 ordered events. All 44 tests pass (52.9s).
+**Status:** ✅ shipped despite quota wall — direct PM implementation worked.
+
+---
+
 ## S14.0 — Unit-death puff animation
 **Coder:** When a damage event drops a stack's unit count, spawn one puff per dead unit at the stack's position. Each puff: Arc r=8, color matches stack (gold variants for hero, red for enemy), alpha 0.8, depth 30. Tween: scale 1→2.5, alpha 0.8→0 over 400ms, ease Cubic.easeOut. Multiple deaths stagger 100ms apart with ±15px random offset. `unitsRemaining(oldHp,hpPerUnit) - unitsRemaining(newHp,hpPerUnit)` computes kill count.
 **Verification:** new e2e `s14-0-death-puff.spec.ts` triggers Troll combat with hero dmg pinned to 4 (kills 2 units), counts Arc children before/peak/after. All 43 tests pass (50.6s).

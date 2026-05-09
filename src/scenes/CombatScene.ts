@@ -48,6 +48,8 @@ export class CombatScene extends Phaser.Scene {
   private enemyStackLabel!: Phaser.GameObjects.Text;
   private enemyBarFill!: Phaser.GameObjects.Rectangle;
   private attackBtn!: Phaser.GameObjects.Rectangle;
+  public logLines: string[] = [];
+  private logText!: Phaser.GameObjects.Text;
 
   initData: {
     enemyCol?: number;
@@ -123,6 +125,7 @@ export class CombatScene extends Phaser.Scene {
     this.enemyDamageMax = this.initData.enemyDamageMax ?? 1;
     this.combatOver = false;
     this.isCombatAnimating = false;
+    this.logLines = [];
     this.rollHeroDamage = () => {
       const stack = this.heroArmy[this.activeStackIndex];
       if (!stack) return 0;
@@ -238,6 +241,24 @@ export class CombatScene extends Phaser.Scene {
     this.enemyBarFill = this.add
       .rectangle(960 - BAR_WIDTH / 2, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 0xcc4444)
       .setOrigin(0, 0.5);
+
+    // Combat log panel — bottom of canvas
+    this.add
+      .rectangle(640, 660, 1200, 120, 0x111111, 0.6)
+      .setStrokeStyle(1, 0x444444)
+      .setOrigin(0.5, 0.5)
+      .setDepth(5);
+    this.logText = this.add
+      .text(60, 605, "", { fontSize: "14px", color: "#cccccc" })
+      .setOrigin(0, 0)
+      .setDepth(6);
+    this.addLogLine("Combat begins!");
+  }
+
+  private addLogLine(line: string): void {
+    this.logLines.push(line);
+    if (this.logLines.length > 6) this.logLines.shift();
+    this.logText.setText(this.logLines.join("\n"));
   }
 
   private selectStack(index: number): void {
@@ -373,7 +394,12 @@ export class CombatScene extends Phaser.Scene {
         const killed = unitsRemaining(oldEnemyHp, this.enemyHpPerUnit) - unitsRemaining(newEnemyHp, this.enemyHpPerUnit);
         if (killed > 0) this.spawnDeathPuff("enemy", killed);
 
+        const activeName = this.heroArmy[this.activeStackIndex]?.name ?? "Hero";
+        const killSuffix = killed > 0 ? ` (Killed ${killed})` : "";
+        this.addLogLine(`${activeName} attack ${this.enemyName} for ${dmg} damage.${killSuffix}`);
+
         if (this.enemyHp <= 0) {
+          this.addLogLine(`${activeName} killed ${this.enemyName}!`);
           this.combatOver = true;
           this.attackBtn.setAlpha(0.5).disableInteractive();
           this.showOutcome(true);
@@ -411,7 +437,11 @@ export class CombatScene extends Phaser.Scene {
       const heroKilled = unitsRemaining(oldHeroHp, activeStack.hpPerUnit) - unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit);
       if (heroKilled > 0) this.spawnDeathPuff("hero", heroKilled);
 
+      const heroKillSuffix = heroKilled > 0 ? ` (Killed ${heroKilled})` : "";
+      this.addLogLine(`${this.enemyName} attacks ${activeStack.name} for ${dmg} damage.${heroKillSuffix}`);
+
       if (activeStack.currentHp <= 0) {
+        this.addLogLine(`${activeStack.name} routed!`);
         // Auto-switch to next living stack
         const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
         if (nextAlive !== -1) {
@@ -430,7 +460,8 @@ export class CombatScene extends Phaser.Scene {
   private showOutcome(victory: boolean): void {
     const text = victory ? "VICTORY!" : "DEFEAT";
     const color = victory ? "#44cc44" : "#cc4444";
-    this.add.text(640, 600, text, { fontSize: "40px", color }).setOrigin(0.5);
+    this.addLogLine(text);
+    this.add.text(640, 560, text, { fontSize: "40px", color }).setOrigin(0.5);
 
     this.time.delayedCall(1500, () => {
       if (victory) {
