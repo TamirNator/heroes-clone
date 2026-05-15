@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S22.1 — Persistent total-kills counter shown in About
+**PM (direct):** Each victorious return to MapScene increments `registry["totalKills"]` and writes `localStorage["heroes-clone:totalKills"]`. TitleScene's About modal reads the localStorage key and displays "Total enemies defeated across all sessions: N". Survives full game reset (separate localStorage key from main save).
+**Status:** ✅ shipped (PM direct). All 56 tests pass.
+
+---
+
 ## S22.0 — Combat-state save/restore across page reload (closes v1.8)
 **PM (direct):** New `inCombat` field in `SaveData` capturing the full combat state (enemy id+coords+stats, hero army, round number). `persistCombatState()` called after each enemy retaliation lungeComplete writes it to localStorage. Victory/Defeat/Return/ESC clear it via `clearCombatSave()`. TitleScene (on plain `/` only) checks for `inCombat` and if present, auto-resumes via `scene.start("CombatScene", inCombat)`. CombatScene's `init` accepts `roundNumber` to restore counter. Tests still use `?nointro` which bypasses TitleScene entirely.
 **Verification:** new e2e `s22-0-combat-resume.spec.ts` — fights Goblin one round, verifies inCombat in localStorage, reloads to plain `/`, confirms CombatScene resumes with enemyHp=2 (mid-fight). All 56 tests pass (2.6m).

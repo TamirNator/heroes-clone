@@ -211,6 +211,14 @@ export class MapScene extends Phaser.Scene {
         (this.registry.get("defeatedEnemies") as Set<string>).add(
           `${this.initData.defeatedCol},${this.initData.defeatedRow}`
         );
+        // Persistent total-kills counter (across all runs)
+        const prevKills = (this.registry.get("totalKills") as number | undefined) ?? 0;
+        this.registry.set("totalKills", prevKills + 1);
+        try {
+          localStorage.setItem("heroes-clone:totalKills", String(prevKills + 1));
+        } catch {
+          /* ignore */
+        }
       }
       if (this.initData.heroArmy !== undefined) {
         this.registry.set("heroArmy", this.initData.heroArmy);

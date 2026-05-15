@@ -135,11 +135,17 @@ export class TitleScene extends Phaser.Scene {
 
   private showAbout(): void {
     const overlay = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.85).setOrigin(0.5).setDepth(100);
+    let totalKills = 0;
+    try {
+      totalKills = parseInt(localStorage.getItem("heroes-clone:totalKills") ?? "0", 10) || 0;
+    } catch {
+      /* ignore */
+    }
     const text = this.add
       .text(
         640,
         360,
-        "HEROES CLONE\n\nA tiny Heroes 3-style turn-based hex strategy game.\nBuilt as a slice-by-slice exercise in TypeScript + Phaser 3.\n\nClick anywhere to dismiss.",
+        `HEROES CLONE\n\nA tiny Heroes 3-style turn-based hex strategy game.\nBuilt as a slice-by-slice exercise in TypeScript + Phaser 3.\n\nTotal enemies defeated across all sessions: ${totalKills}\n\nClick anywhere to dismiss.`,
         { fontSize: "18px", color: "#cccccc", align: "center", lineSpacing: 6 }
       )
       .setOrigin(0.5)
