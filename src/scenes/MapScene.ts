@@ -310,11 +310,15 @@ export class MapScene extends Phaser.Scene {
       .setDepth(10);
 
     const randomSpawns = this.registry.get("randomEnemySpawns") as Array<{ col: number; row: number }> | undefined;
+    const difficulty = (this.registry.get("difficulty") as "easy" | "normal" | "hard" | undefined) ?? "normal";
+    const hpScale = difficulty === "easy" ? 0.6 : difficulty === "hard" ? 1.6 : 1.0;
     for (let i = 0; i < ENEMIES.length; i++) {
       const enemyDef = ENEMIES[i]!;
       const spawn = randomSpawns?.[i] ?? { col: enemyDef.col, row: enemyDef.row };
+      // Apply difficulty: scale stackCount (HP per unit unchanged so visual stack count varies)
+      const scaledStack = Math.max(1, Math.round(enemyDef.stackCount * hpScale));
       // Defeat tracking key uses the effective spawn (random or default)
-      const enemy: Enemy = randomSpawns ? { ...enemyDef, col: spawn.col, row: spawn.row } : enemyDef;
+      const enemy: Enemy = { ...enemyDef, col: spawn.col, row: spawn.row, stackCount: scaledStack };
       if (this.isDefeated(enemy.col, enemy.row)) continue;
       const { x: ex, y: ey } = this.hexCenter(enemy.col, enemy.row);
       const fillColor = enemy.name === "Wolf" ? 0xff8844 : enemy.name === "Archer" ? 0xcccc44 : 0xcc4444;

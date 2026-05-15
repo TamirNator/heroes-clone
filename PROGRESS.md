@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S20.2 — Difficulty selector in TitleScene (closes v1.7)
+**PM (direct):** New `registry["difficulty"]` ("easy" / "normal" / "hard"), default normal. Enemy render loop reads it and scales `stackCount` by 0.6× / 1.0× / 1.6× — visibly fewer/more units per enemy. New TitleScene cycle button below About: shows current difficulty with color (green/gold/red), click to cycle. Persists across navigation since it's in registry. Tests skip TitleScene via `?nointro` so they get default `normal`.
+**Status:** ✅ shipped — closes v1.7 (towns + difficulty). All 55 tests pass.
+
+---
+
 ## S20.1 — Random town positions on Random Game
 **PM (direct):** New `MapScene.generateRandomTowns(terrain?, enemySpawns?, pickups?)` static — generates `TOWNS.length` random town positions avoiding hero spawn, water, enemy spawns, and pickup positions. Stored in `registry["randomTowns"]`. Render loop and visit-check both check the random array first, fall back to fixed TOWNS. TitleScene "Random Game" generates and stores; "New Game" clears.
 **Status:** ✅ shipped (PM direct). All 55 tests pass.

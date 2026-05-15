@@ -60,6 +60,35 @@ export class TitleScene extends Phaser.Scene {
     });
     buttonY += 70;
     this.makeButton(640, buttonY, "About", "#888888", () => this.showAbout());
+
+    // Difficulty toggle below About
+    this.addDifficultyToggle(buttonY + 80);
+  }
+
+  private addDifficultyToggle(y: number): void {
+    const current = (this.game.registry.get("difficulty") as "easy" | "normal" | "hard" | undefined) ?? "normal";
+    const colorFor = (d: string) => d === "easy" ? "#44cc44" : d === "hard" ? "#cc4444" : "#ffcc44";
+    const label = this.add
+      .text(640 - 130, y, "Difficulty:", { fontSize: "16px", color: "#888888" })
+      .setOrigin(1, 0.5);
+    const display = this.add
+      .text(640, y, current.toUpperCase(), { fontSize: "18px", color: colorFor(current), fontStyle: "bold" })
+      .setOrigin(0.5);
+    const cycleBtn = this.add
+      .rectangle(640 + 110, y, 80, 30, 0x2a3a4a)
+      .setStrokeStyle(1, 0x888888)
+      .setOrigin(0.5)
+      .setInteractive();
+    this.add.text(640 + 110, y, "cycle", { fontSize: "14px", color: "#cccccc" }).setOrigin(0.5);
+    cycleBtn.on("pointerover", () => cycleBtn.setFillStyle(0x4a6a8a));
+    cycleBtn.on("pointerout", () => cycleBtn.setFillStyle(0x2a3a4a));
+    cycleBtn.on("pointerdown", () => {
+      const cur = (this.game.registry.get("difficulty") as string | undefined) ?? "normal";
+      const next = cur === "easy" ? "normal" : cur === "normal" ? "hard" : "easy";
+      this.game.registry.set("difficulty", next);
+      display.setText(next.toUpperCase()).setColor(colorFor(next));
+    });
+    void label;
   }
 
   private clearAllProgress(): void {
