@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S21.1 — Remove unused BootScene (cleanup)
+**PM (direct):** `BootScene.ts` was the original placeholder scene from S1; replaced by TitleScene as the start scene in S16.1 but the file was left in place. Removed `src/scenes/BootScene.ts` and dropped its import + scene-array entry in `src/main.ts`. All 55 tests pass — nothing referenced it functionally.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S21.0 — Title button on map
 **PM (direct):** Small "Title" button (100×26 gray-stroked, neutral) below Reset at top-right. Click → `scene.start("TitleScene")` so player can return to title without losing save (registry + localStorage preserved). Disabled while animating. All 55 tests pass.
 **Status:** ✅ shipped (PM direct).
