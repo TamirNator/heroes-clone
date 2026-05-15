@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S21.0 — Title button on map
+**PM (direct):** Small "Title" button (100×26 gray-stroked, neutral) below Reset at top-right. Click → `scene.start("TitleScene")` so player can return to title without losing save (registry + localStorage preserved). Disabled while animating. All 55 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S20.2 — Difficulty selector in TitleScene (closes v1.7)
 **PM (direct):** New `registry["difficulty"]` ("easy" / "normal" / "hard"), default normal. Enemy render loop reads it and scales `stackCount` by 0.6× / 1.0× / 1.6× — visibly fewer/more units per enemy. New TitleScene cycle button below About: shows current difficulty with color (green/gold/red), click to cycle. Persists across navigation since it's in registry. Tests skip TitleScene via `?nointro` so they get default `normal`.
 **Status:** ✅ shipped — closes v1.7 (towns + difficulty). All 55 tests pass.

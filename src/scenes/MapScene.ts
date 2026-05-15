@@ -458,6 +458,23 @@ export class MapScene extends Phaser.Scene {
       }
     });
 
+    // Title button — return to title screen (no save loss)
+    const titleBtn = this.add
+      .rectangle(1280 - 20, 145, 100, 26, DEFAULT_FILL)
+      .setStrokeStyle(1, 0x888888)
+      .setOrigin(1, 0)
+      .setDepth(20)
+      .setInteractive();
+    this.add
+      .text(1280 - 20 - 50, 145 + 13, "Title", { fontSize: "12px", color: "#cccccc" })
+      .setOrigin(0.5, 0.5)
+      .setDepth(21);
+    titleBtn.on("pointerover", () => titleBtn.setFillStyle(0x4a6a8a));
+    titleBtn.on("pointerout", () => titleBtn.setFillStyle(DEFAULT_FILL));
+    titleBtn.on("pointerdown", () => {
+      if (!this.isAnimating) this.scene.start("TitleScene");
+    });
+
     // Hero HP label
     const hp = this.getHeroHp();
     const maxHp = this.getHeroMaxHp();
