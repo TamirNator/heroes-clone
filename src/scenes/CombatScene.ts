@@ -13,6 +13,31 @@ function unitsRemaining(currentHp: number, hpPerUnit: number): number {
   return Math.ceil(currentHp / hpPerUnit);
 }
 
+const SAVE_KEY = "heroes-clone:save";
+
+function saveCombatState(state: object): void {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    const save = raw ? JSON.parse(raw) : {};
+    save.inCombat = state;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearCombatSave(): void {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const save = JSON.parse(raw);
+    delete save.inCombat;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch {
+    /* ignore */
+  }
+}
+
 const HERO_HP = 10; // legacy defeat-signal constant
 const ENEMY_HP_DEFAULT = 5;
 const HERO_STACK_X = [240, 400] as const;
@@ -72,6 +97,7 @@ export class CombatScene extends Phaser.Scene {
     enemyDamageMax?: number;
     heroArmy?: HeroStackState[];
     xpReward?: number;
+    roundNumber?: number;
   } = {};
 
   // Back-compat getter: total hero HP across all stacks
@@ -119,6 +145,7 @@ export class CombatScene extends Phaser.Scene {
     enemyDamageMax?: number;
     heroArmy?: HeroStackState[];
     xpReward?: number;
+    roundNumber?: number;
   }): void {
     this.initData = data ?? {};
   }
@@ -139,7 +166,8 @@ export class CombatScene extends Phaser.Scene {
     this.combatOver = false;
     this.isCombatAnimating = false;
     this.logLines = [];
-    this.roundNumber = 1;
+    // Restore round if resuming from saved combat
+    this.roundNumber = this.initData.roundNumber ?? 1;
     this.autoAttack = false;
     this.combatSpeed = 1;
     this.rollHeroDamage = () => {
@@ -229,15 +257,16 @@ export class CombatScene extends Phaser.Scene {
 
     returnBtn.on("pointerover", () => returnBtn.setFillStyle(0x4a6a8a));
     returnBtn.on("pointerout", () => returnBtn.setFillStyle(0x2a3a4a));
-    returnBtn.on("pointerdown", () =>
+    returnBtn.on("pointerdown", () => {
+      clearCombatSave();
       this.scene.start("MapScene", {
         defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
         defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
         heroCol: this.initData.enemyCol,
         heroRow: this.initData.enemyRow,
         heroArmy: this.heroArmy,
-      })
-    );
+      });
+    });
 
     // Attack button — rects[1]
     this.attackBtn = this.add
@@ -287,15 +316,16 @@ export class CombatScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-O", () => this.toggleAuto());
     this.input.keyboard?.on("keydown-ONE", () => this.selectStack(0));
     this.input.keyboard?.on("keydown-TWO", () => this.selectStack(1));
-    this.input.keyboard?.on("keydown-ESC", () =>
+    this.input.keyboard?.on("keydown-ESC", () => {
+      clearCombatSave();
       this.scene.start("MapScene", {
         defeatedCol: this.initData.originalCol ?? this.initData.enemyCol,
         defeatedRow: this.initData.originalRow ?? this.initData.enemyRow,
         heroCol: this.initData.enemyCol,
         heroRow: this.initData.enemyRow,
         heroArmy: this.heroArmy,
-      })
-    );
+      });
+    });
 
     // Hero HP bars — one per stack (added after buttons so rects[0/1] remain Return/Attack)
     for (let i = 0; i < this.heroArmy.length; i++) {
@@ -535,6 +565,7 @@ export class CombatScene extends Phaser.Scene {
         if (!this.combatOver) {
           this.roundNumber += 1;
           this.roundText.setText(`Round ${this.roundNumber}`);
+          this.persistCombatState();
           if (this.autoAttack) {
             this.time.delayedCall(200, () => {
               if (this.autoAttack && !this.combatOver && !this.isCombatAnimating) this.onAttack();
@@ -543,6 +574,25 @@ export class CombatScene extends Phaser.Scene {
         }
       }
     );
+  }
+
+  private persistCombatState(): void {
+    if (this.initData.enemyCol === undefined || this.initData.enemyRow === undefined) return;
+    saveCombatState({
+      enemyCol: this.initData.enemyCol,
+      enemyRow: this.initData.enemyRow,
+      originalCol: this.initData.originalCol ?? this.initData.enemyCol,
+      originalRow: this.initData.originalRow ?? this.initData.enemyRow,
+      enemyName: this.enemyName,
+      enemyHp: this.enemyHp,
+      enemyStackCount: this.initData.enemyStackCount ?? 1,
+      enemyHpPerUnit: this.enemyHpPerUnit,
+      enemyDamageMin: this.enemyDamageMin,
+      enemyDamageMax: this.enemyDamageMax,
+      xpReward: this.initData.xpReward ?? 0,
+      heroArmy: this.heroArmy,
+      roundNumber: this.roundNumber,
+    });
   }
 
   private doEnemyAttackPeak(): void {
@@ -588,6 +638,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private showOutcome(victory: boolean): void {
+    clearCombatSave();
     const text = victory ? "VICTORY!" : "DEFEAT";
     const color = victory ? "#44cc44" : "#cc4444";
     this.addLogLine(text);

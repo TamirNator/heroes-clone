@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S22.0 — Combat-state save/restore across page reload (closes v1.8)
+**PM (direct):** New `inCombat` field in `SaveData` capturing the full combat state (enemy id+coords+stats, hero army, round number). `persistCombatState()` called after each enemy retaliation lungeComplete writes it to localStorage. Victory/Defeat/Return/ESC clear it via `clearCombatSave()`. TitleScene (on plain `/` only) checks for `inCombat` and if present, auto-resumes via `scene.start("CombatScene", inCombat)`. CombatScene's `init` accepts `roundNumber` to restore counter. Tests still use `?nointro` which bypasses TitleScene entirely.
+**Verification:** new e2e `s22-0-combat-resume.spec.ts` — fights Goblin one round, verifies inCombat in localStorage, reloads to plain `/`, confirms CombatScene resumes with enemyHp=2 (mid-fight). All 56 tests pass (2.6m).
+**Status:** ✅ shipped — closes v1.8 (combat persistence + cleanup).
+
+---
+
 ## S21.1 — Remove unused BootScene (cleanup)
 **PM (direct):** `BootScene.ts` was the original placeholder scene from S1; replaced by TitleScene as the start scene in S16.1 but the file was left in place. Removed `src/scenes/BootScene.ts` and dropped its import + scene-array entry in `src/main.ts`. All 55 tests pass — nothing referenced it functionally.
 **Status:** ✅ shipped (PM direct).

@@ -112,6 +112,21 @@ type SaveData = {
   heroLevel?: number;
   consumed?: string[];
   consumedScrolls?: string[];
+  inCombat?: {
+    enemyCol: number;
+    enemyRow: number;
+    originalCol: number;
+    originalRow: number;
+    enemyName: string;
+    enemyHp: number;
+    enemyStackCount: number;
+    enemyHpPerUnit: number;
+    enemyDamageMin: number;
+    enemyDamageMax: number;
+    xpReward: number;
+    heroArmy: HeroStackState[];
+    roundNumber: number;
+  };
 };
 
 export class MapScene extends Phaser.Scene {

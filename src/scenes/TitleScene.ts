@@ -13,6 +13,20 @@ export class TitleScene extends Phaser.Scene {
       return;
     }
 
+    // Resume in-progress combat if save has it
+    try {
+      const raw = localStorage.getItem("heroes-clone:save");
+      if (raw) {
+        const save = JSON.parse(raw);
+        if (save.inCombat) {
+          this.scene.start("CombatScene", save.inCombat);
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
     this.cameras.main.setBackgroundColor("#0a0a0a");
 
     this.add
