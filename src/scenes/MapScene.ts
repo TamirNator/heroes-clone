@@ -366,7 +366,9 @@ export class MapScene extends Phaser.Scene {
     }
 
     // Render towns — never consumed; walking onto fully heals all hero stacks
-    for (const town of TOWNS) {
+    const randomTowns = this.registry.get("randomTowns") as Array<{ col: number; row: number }> | undefined;
+    const townList = randomTowns ?? TOWNS;
+    for (const town of townList) {
       const { x: cx, y: cy } = this.hexCenter(town.col, town.row);
       this.add
         .text(cx, cy, "T", { fontSize: "32px", color: "#88ccff", fontStyle: "bold" })
@@ -780,7 +782,9 @@ export class MapScene extends Phaser.Scene {
         if (scroll && !this.consumedScrolls().has(`${col},${row}`)) {
           this.consumeScroll(col, row);
         }
-        const town = TOWNS.find(t => t.col === col && t.row === row);
+        const randomT = this.registry.get("randomTowns") as Array<{ col: number; row: number }> | undefined;
+        const townList2 = randomT ?? TOWNS;
+        const town = townList2.find(t => t.col === col && t.row === row);
         if (town) {
           this.visitTown(col, row);
         }
@@ -847,6 +851,34 @@ export class MapScene extends Phaser.Scene {
     place("water", 6 + Math.floor(Math.random() * 5)); // 6-10 water tiles
     place("forest", 8 + Math.floor(Math.random() * 6)); // 8-13 forest tiles
     return overrides;
+  }
+
+  // Generate random town positions (1 town like default), avoiding hero spawn, water, enemies, pickups.
+  static generateRandomTowns(
+    terrain?: Record<string, Terrain>,
+    enemySpawns?: Array<{ col: number; row: number }>,
+    pickups?: { potions: Array<{ col: number; row: number }>; scrolls: Array<{ col: number; row: number }> }
+  ): Array<{ col: number; row: number }> {
+    const used = new Set<string>();
+    used.add("0,0");
+    if (enemySpawns) for (const e of enemySpawns) used.add(`${e.col},${e.row}`);
+    if (pickups) {
+      for (const p of pickups.potions) used.add(`${p.col},${p.row}`);
+      for (const s of pickups.scrolls) used.add(`${s.col},${s.row}`);
+    }
+    const out: Array<{ col: number; row: number }> = [];
+    let attempts = 0;
+    while (out.length < TOWNS.length && attempts < 200) {
+      attempts++;
+      const col = Math.floor(Math.random() * COLS);
+      const row = Math.floor(Math.random() * ROWS);
+      const key = `${col},${row}`;
+      if (used.has(key)) continue;
+      if (terrain && terrain[key] === "water") continue;
+      used.add(key);
+      out.push({ col, row });
+    }
+    return out;
   }
 
   // Generate random pickup positions (potions + scrolls) avoiding hero spawn and water tiles.

@@ -21,6 +21,12 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S20.1 — Random town positions on Random Game
+**PM (direct):** New `MapScene.generateRandomTowns(terrain?, enemySpawns?, pickups?)` static — generates `TOWNS.length` random town positions avoiding hero spawn, water, enemy spawns, and pickup positions. Stored in `registry["randomTowns"]`. Render loop and visit-check both check the random array first, fall back to fixed TOWNS. TitleScene "Random Game" generates and stores; "New Game" clears.
+**Status:** ✅ shipped (PM direct). All 55 tests pass.
+
+---
+
 ## S20.0 — Towns (full-heal hex)
 **PM (direct):** Added `Town` type and `TOWNS = [{col:10, row:12}]`. Render: blue bold "T" 32px depth 5 at the town hex (never consumed). `visitTown(col,row)` triggered in `animatePath`'s post-step block: fully restores `currentHp = count*hpPerUnit` for every army stack, syncs registry, updates HP label, spawns "FULL HEAL" floating text, saves. No-op if already at full HP.
 **Verification:** new e2e `s20-0-towns.spec.ts` damages both hero stacks, teleports hero adjacent to town, clicks the town hex, asserts heroHp === 28 (full) and each stack at max. All 55 tests pass (one flake on retry — re-run cleared it).

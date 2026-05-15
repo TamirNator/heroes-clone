@@ -41,6 +41,7 @@ export class TitleScene extends Phaser.Scene {
       this.game.registry.remove("randomEnemySpawns");
       this.game.registry.remove("randomPotions");
       this.game.registry.remove("randomScrolls");
+      this.game.registry.remove("randomTowns");
       this.scene.start("MapScene", {});
     });
     buttonY += 70;
@@ -49,10 +50,12 @@ export class TitleScene extends Phaser.Scene {
       const terrain = MapScene.generateRandomTerrain();
       const enemySpawns = MapScene.generateRandomEnemySpawns(terrain);
       const pickups = MapScene.generateRandomPickups(terrain, enemySpawns);
+      const towns = MapScene.generateRandomTowns(terrain, enemySpawns, pickups);
       this.game.registry.set("randomTerrain", terrain);
       this.game.registry.set("randomEnemySpawns", enemySpawns);
       this.game.registry.set("randomPotions", pickups.potions);
       this.game.registry.set("randomScrolls", pickups.scrolls);
+      this.game.registry.set("randomTowns", towns);
       this.scene.start("MapScene", {});
     });
     buttonY += 70;
