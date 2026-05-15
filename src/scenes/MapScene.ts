@@ -48,6 +48,10 @@ const POTIONS: readonly Potion[] = [
 ];
 
 type Scroll = { col: number; row: number };
+type Town = { col: number; row: number };
+const TOWNS: readonly Town[] = [
+  { col: 10, row: 12 },
+];
 const SCROLLS: readonly Scroll[] = [
   { col: 12, row: 8 },
   { col: 5, row: 6 },
@@ -359,6 +363,15 @@ export class MapScene extends Phaser.Scene {
         fontStyle: "bold",
       }).setOrigin(0.5).setDepth(5);
       this.scrollSprites.set(`${scroll.col},${scroll.row}`, sprite);
+    }
+
+    // Render towns — never consumed; walking onto fully heals all hero stacks
+    for (const town of TOWNS) {
+      const { x: cx, y: cy } = this.hexCenter(town.col, town.row);
+      this.add
+        .text(cx, cy, "T", { fontSize: "32px", color: "#88ccff", fontStyle: "bold" })
+        .setOrigin(0.5)
+        .setDepth(5);
     }
 
     const defeated = this.registry.get("defeatedEnemies") as Set<string>;
@@ -767,6 +780,10 @@ export class MapScene extends Phaser.Scene {
         if (scroll && !this.consumedScrolls().has(`${col},${row}`)) {
           this.consumeScroll(col, row);
         }
+        const town = TOWNS.find(t => t.col === col && t.row === row);
+        if (town) {
+          this.visitTown(col, row);
+        }
         this.animatePath(steps, index + 1);
       },
     });
@@ -1087,6 +1104,39 @@ export class MapScene extends Phaser.Scene {
       this.scrollSprites.delete(key);
     }
 
+    this.saveProgress();
+  }
+
+  private visitTown(col: number, row: number): void {
+    // Fully heal all hero stacks (towns are not consumed)
+    const army = this.getHeroArmy();
+    let healed = false;
+    for (const stack of army) {
+      const stackMax = stack.count * stack.hpPerUnit;
+      if (stack.currentHp < stackMax) {
+        stack.currentHp = stackMax;
+        healed = true;
+      }
+    }
+    if (!healed) return;
+    this.registry.set("heroArmy", army);
+    const newHp = this.getHeroHp();
+    this.registry.set("heroHp", newHp);
+    this.heroHpLabel.setText(`HP: ${newHp}/${this.getHeroMaxHp()}`);
+    this.heroHpLabel.setStyle({ color: this.hpColor(newHp) });
+
+    const { x: cx, y: cy } = this.hexCenter(col, row);
+    const healText = this.add
+      .text(cx, cy - 40, "FULL HEAL", { fontSize: "18px", color: "#88ccff", fontStyle: "bold" })
+      .setOrigin(0.5)
+      .setDepth(60);
+    this.tweens.add({
+      targets: healText,
+      y: cy - 90,
+      alpha: 0,
+      duration: 1200,
+      onComplete: () => healText.destroy(),
+    });
     this.saveProgress();
   }
 

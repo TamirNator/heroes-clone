@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S20.0 — Towns (full-heal hex)
+**PM (direct):** Added `Town` type and `TOWNS = [{col:10, row:12}]`. Render: blue bold "T" 32px depth 5 at the town hex (never consumed). `visitTown(col,row)` triggered in `animatePath`'s post-step block: fully restores `currentHp = count*hpPerUnit` for every army stack, syncs registry, updates HP label, spawns "FULL HEAL" floating text, saves. No-op if already at full HP.
+**Verification:** new e2e `s20-0-towns.spec.ts` damages both hero stacks, teleports hero adjacent to town, clicks the town hex, asserts heroHp === 28 (full) and each stack at max. All 55 tests pass (one flake on retry — re-run cleared it).
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S19.2 — Random pickup positions on Random Game
 **PM (direct):** Added `MapScene.generateRandomPickups(terrain?, enemySpawns?)` returning `{ potions, scrolls }` of length matching POTIONS.length / SCROLLS.length. Avoids hero spawn, water tiles, and enemy spawns. Stored in `registry["randomPotions"]` + `["randomScrolls"]`. Render loops + pickup-check in `animatePath` both check the random arrays first, fall back to fixed POTIONS/SCROLLS. TitleScene's "Random Game" generates terrain + enemy spawns + pickups; "New Game" clears all four random keys. All 54 tests still pass — Random Game now produces fully procedural maps; default New Game keeps the fixed layout.
 **Status:** ✅ shipped (PM direct).
