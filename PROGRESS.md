@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S28.3 — Combat preferences (auto + speed) persist across combats
+**PM (direct):** `combatSpeed` and `autoAttack` now read from `registry["combatSpeedPref"]` / `registry["combatAutoPref"]` on each CombatScene init, and write to them on every toggle/cycle. Player sets max speed once, every subsequent fight uses it. UI reflects restored state (button colors, labels).
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S28.2 — Dynamic document.title (closes v1.13)
 **PM (direct):** MapScene `create()` updates `document.title` to `"Heroes Clone [seed:N] — 3/6 enemies"` on each scene start. Browser tab now reflects current run mode + progress at a glance, useful when multiple tabs are open.
 **Verification:** all 60 tests pass.

@@ -169,8 +169,9 @@ export class CombatScene extends Phaser.Scene {
     this.logLines = [];
     // Restore round if resuming from saved combat
     this.roundNumber = this.initData.roundNumber ?? 1;
-    this.autoAttack = false;
-    this.combatSpeed = 1;
+    // Persist user prefs (auto + speed) across combats via registry
+    this.autoAttack = (this.game.registry.get("combatAutoPref") as boolean | undefined) ?? false;
+    this.combatSpeed = (this.game.registry.get("combatSpeedPref") as number | undefined) ?? 1;
     this.rollHeroDamage = () => {
       const stack = this.heroArmy[this.activeStackIndex];
       if (!stack) return 0;
@@ -312,6 +313,15 @@ export class CombatScene extends Phaser.Scene {
     this.speedBtn.on("pointerout", () => this.speedBtn.setFillStyle(0x2a3a4a));
     this.speedBtn.on("pointerdown", () => this.cycleSpeed());
 
+    // Reflect persisted prefs in UI (from registry, restored at top of create)
+    if (this.combatSpeed !== 1) {
+      this.speedBtnText.setText(this.combatSpeed === 100 ? "Speed: MAX" : `Speed: ${this.combatSpeed}×`);
+    }
+    if (this.autoAttack) {
+      this.autoBtn.setFillStyle(0x44cc44).setStrokeStyle(2, 0x44cc44);
+      this.autoBtnText.setColor("#ffffff");
+    }
+
     // Keyboard shortcuts: A = Attack, O = toggle Auto, 1/2 = select stack, ESC = Return
     this.input.keyboard?.on("keydown-A", () => this.onAttack());
     this.input.keyboard?.on("keydown-O", () => this.toggleAuto());
@@ -375,6 +385,7 @@ export class CombatScene extends Phaser.Scene {
     else if (this.combatSpeed === 4) this.combatSpeed = 100;
     else this.combatSpeed = 1;
     this.speedBtnText.setText(this.combatSpeed === 100 ? "Speed: MAX" : `Speed: ${this.combatSpeed}×`);
+    this.game.registry.set("combatSpeedPref", this.combatSpeed);
   }
 
   // Scale a duration by current speed (faster = shorter durations).
@@ -386,6 +397,7 @@ export class CombatScene extends Phaser.Scene {
   private toggleAuto(): void {
     if (this.combatOver) return;
     this.autoAttack = !this.autoAttack;
+    this.game.registry.set("combatAutoPref", this.autoAttack);
     this.autoBtn.setFillStyle(this.autoAttack ? 0x44cc44 : 0x2a3a4a);
     this.autoBtn.setStrokeStyle(2, this.autoAttack ? 0x44cc44 : 0x888888);
     this.autoBtnText.setColor(this.autoAttack ? "#ffffff" : "#888888");
