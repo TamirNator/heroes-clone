@@ -595,46 +595,86 @@ export class CombatScene extends Phaser.Scene {
     });
   }
 
+  // Pick which alive hero stack the enemy attacks.
+  // Default (easy/normal): attack the player's active stack.
+  // Hard difficulty: focus-fire the weakest alive stack (lowest currentHp).
+  private chooseEnemyTarget(): number {
+    const difficulty = (this.game.registry.get("difficulty") as string | undefined) ?? "normal";
+    if (difficulty !== "hard") {
+      // Default behavior: hit active stack if alive, otherwise next alive
+      const active = this.heroArmy[this.activeStackIndex];
+      if (active && active.currentHp > 0) return this.activeStackIndex;
+      return this.heroArmy.findIndex(s => s.currentHp > 0);
+    }
+    // Hard: focus-fire weakest
+    let bestIdx = -1;
+    let bestHp = Infinity;
+    for (let i = 0; i < this.heroArmy.length; i++) {
+      const s = this.heroArmy[i]!;
+      if (s.currentHp > 0 && s.currentHp < bestHp) {
+        bestHp = s.currentHp;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
   private doEnemyAttackPeak(): void {
     const dmg = this.rollEnemyDamage();
-    const activeStack = this.heroArmy[this.activeStackIndex];
-    if (!activeStack) return;
+    const targetIdx = this.chooseEnemyTarget();
+    const targetStack = this.heroArmy[targetIdx];
+    if (!targetStack) return;
 
-    const oldHeroHp = activeStack.currentHp;
-    activeStack.currentHp = Math.max(0, oldHeroHp - dmg);
-    const stackMax = activeStack.count * activeStack.hpPerUnit;
-    this.heroHpTexts[this.activeStackIndex]?.setText(
-      `HP: ${activeStack.currentHp}/${stackMax}`
+    const oldHeroHp = targetStack.currentHp;
+    targetStack.currentHp = Math.max(0, oldHeroHp - dmg);
+    const stackMax = targetStack.count * targetStack.hpPerUnit;
+    this.heroHpTexts[targetIdx]?.setText(`HP: ${targetStack.currentHp}/${stackMax}`);
+    this.heroStackLabels[targetIdx]?.setText(
+      this.formatStackLabel(targetStack.name, unitsRemaining(targetStack.currentHp, targetStack.hpPerUnit))
     );
-    this.heroStackLabels[this.activeStackIndex]?.setText(
-      this.formatStackLabel(activeStack.name, unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit))
-    );
-    this.heroBarFills[this.activeStackIndex]!.displayWidth = Math.max(
+    this.heroBarFills[targetIdx]!.displayWidth = Math.max(
       0,
-      (activeStack.currentHp / stackMax) * HERO_BAR_WIDTH
+      (targetStack.currentHp / stackMax) * HERO_BAR_WIDTH
     );
-    this.spawnDamageText(HERO_STACK_X[this.activeStackIndex]!, 400, dmg);
-    this.shakeOnHit(this.heroSprites[this.activeStackIndex]!);
-    const heroKilled = unitsRemaining(oldHeroHp, activeStack.hpPerUnit) - unitsRemaining(activeStack.currentHp, activeStack.hpPerUnit);
-    if (heroKilled > 0) this.spawnDeathPuff("hero", heroKilled);
+    this.spawnDamageText(HERO_STACK_X[targetIdx]!, 400, dmg);
+    this.shakeOnHit(this.heroSprites[targetIdx]!);
+    const heroKilled = unitsRemaining(oldHeroHp, targetStack.hpPerUnit) - unitsRemaining(targetStack.currentHp, targetStack.hpPerUnit);
+    if (heroKilled > 0) this.spawnDeathPuffForStack(targetIdx, heroKilled);
 
     const heroKillSuffix = heroKilled > 0 ? ` (Killed ${heroKilled})` : "";
-    this.addLogLine(`${this.enemyName} attacks ${activeStack.name} for ${dmg} damage.${heroKillSuffix}`);
+    this.addLogLine(`${this.enemyName} attacks ${targetStack.name} for ${dmg} damage.${heroKillSuffix}`);
 
-    if (activeStack.currentHp <= 0) {
-      this.addLogLine(`${activeStack.name} routed!`);
-      // Auto-switch to next living stack
-      const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
-      if (nextAlive !== -1) {
-        this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
-        this.activeStackIndex = nextAlive;
-        this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
-      } else {
+    if (targetStack.currentHp <= 0) {
+      this.addLogLine(`${targetStack.name} routed!`);
+      // If the routed stack was the player's active, auto-switch to next living stack
+      if (targetIdx === this.activeStackIndex) {
+        const nextAlive = this.heroArmy.findIndex((s, idx) => idx !== this.activeStackIndex && s.currentHp > 0);
+        if (nextAlive !== -1) {
+          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(2, 0x222222);
+          this.activeStackIndex = nextAlive;
+          this.heroSprites[this.activeStackIndex]?.setStrokeStyle(4, 0xffff44);
+        }
+      }
+      // Check defeat: all stacks dead?
+      if (this.heroArmy.every(s => s.currentHp <= 0)) {
         this.combatOver = true;
         this.attackBtn.setAlpha(0.5).disableInteractive();
         this.showOutcome(false);
       }
     }
+  }
+
+  // Variant of spawnDeathPuff that targets a specific hero stack index (not the active one).
+  private spawnDeathPuffForStack(stackIndex: number, count: number): void {
+    const sprite = this.heroSprites[stackIndex];
+    if (!sprite) return;
+    const color = HERO_STACK_FILLS[stackIndex] ?? 0xffcc44;
+    for (let i = 0; i < count; i++) {
+      this.time.delayedCall(this.scaled(i * 100), () => this.spawnSinglePuff(sprite, color));
+    }
+    const intensity = Math.min(0.012, 0.003 + count * 0.002);
+    const duration = Math.min(300, 120 + count * 40);
+    this.cameras.main.shake(this.scaled(duration), intensity);
   }
 
   private showOutcome(victory: boolean): void {
