@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S29.0 — Total play-time tracker shown in About
+**PM (direct):** Phaser timer event ticks every 5s on MapScene, increments `localStorage["heroes-clone:playSeconds"]`. Formatted as `Xh Ym` (or just `Ym`) in the About modal alongside the existing kills/level/turn/streak stats. Survives all resets (separate localStorage key).
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S28.3 — Combat preferences (auto + speed) persist across combats
 **PM (direct):** `combatSpeed` and `autoAttack` now read from `registry["combatSpeedPref"]` / `registry["combatAutoPref"]` on each CombatScene init, and write to them on every toggle/cycle. Player sets max speed once, every subsequent fight uses it. UI reflects restored state (button colors, labels).
 **Verification:** all 60 tests pass.

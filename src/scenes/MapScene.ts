@@ -632,6 +632,20 @@ export class MapScene extends Phaser.Scene {
       shareBtn.on("pointerdown", () => this.shareSeedUrl(seedLabel));
     }
 
+    // Play-time tracker: increment localStorage counter every 5s
+    this.time.addEvent({
+      delay: 5000,
+      loop: true,
+      callback: () => {
+        try {
+          const prev = parseInt(localStorage.getItem("heroes-clone:playSeconds") ?? "0", 10) || 0;
+          localStorage.setItem("heroes-clone:playSeconds", String(prev + 5));
+        } catch {
+          /* ignore */
+        }
+      },
+    });
+
     // Last combat outcome banner (briefly, if scene was entered with one)
     if (this.initData.lastOutcome) {
       const isVictory = this.initData.lastOutcome.startsWith("VICTORY");

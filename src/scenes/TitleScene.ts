@@ -167,14 +167,19 @@ export class TitleScene extends Phaser.Scene {
     let bestLevel = 0;
     let bestTurns = 0;
     let dailyStreak = 0;
+    let playSeconds = 0;
     try {
       totalKills = parseInt(localStorage.getItem("heroes-clone:totalKills") ?? "0", 10) || 0;
       bestLevel = parseInt(localStorage.getItem("heroes-clone:bestLevel") ?? "0", 10) || 0;
       bestTurns = parseInt(localStorage.getItem("heroes-clone:bestTurns") ?? "0", 10) || 0;
       dailyStreak = parseInt(localStorage.getItem("heroes-clone:dailyStreak") ?? "0", 10) || 0;
+      playSeconds = parseInt(localStorage.getItem("heroes-clone:playSeconds") ?? "0", 10) || 0;
     } catch {
       /* ignore */
     }
+    const playMin = Math.floor(playSeconds / 60);
+    const playH = Math.floor(playMin / 60);
+    const playTime = playH > 0 ? `${playH}h ${playMin % 60}m` : `${playMin}m`;
     const streakLine = dailyStreak > 0 ? `Daily streak: ${dailyStreak} day${dailyStreak === 1 ? "" : "s"} 🔥\n` : "";
     const hallOfFame = bestLevel > 0
       ? `Hall of Fame\nBest level on full clear: ${bestLevel}${bestTurns > 0 ? ` • Best clear time: ${bestTurns} turns` : ""}\n${streakLine}`
@@ -183,7 +188,7 @@ export class TitleScene extends Phaser.Scene {
       .text(
         640,
         360,
-        `HEROES CLONE\n\nA tiny Heroes 3-style turn-based hex strategy game.\nBuilt as a slice-by-slice exercise in TypeScript + Phaser 3.\n\n${hallOfFame}Total enemies defeated across all sessions: ${totalKills}\n\nClick anywhere to dismiss.`,
+        `HEROES CLONE\n\nA tiny Heroes 3-style turn-based hex strategy game.\nBuilt as a slice-by-slice exercise in TypeScript + Phaser 3.\n\n${hallOfFame}Total enemies defeated across all sessions: ${totalKills}\nTotal play time: ${playTime}\n\nClick anywhere to dismiss.`,
         { fontSize: "16px", color: "#cccccc", align: "center", lineSpacing: 6 }
       )
       .setOrigin(0.5)
