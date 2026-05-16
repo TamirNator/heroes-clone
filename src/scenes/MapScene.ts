@@ -662,7 +662,9 @@ export class MapScene extends Phaser.Scene {
           "  • O — toggle Auto-attack",
           "  • ESC — Return to map",
           "",
-          "  H or ? — toggle this help",
+          "GLOBAL",
+          "  • M — toggle sound on/off",
+          "  • H or ? — toggle this help",
         ].join("\n"),
         { fontSize: "14px", color: "#cccccc", lineSpacing: 4, align: "left" }
       )
