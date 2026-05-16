@@ -68,13 +68,23 @@ test.describe('S17.1 — combat speed slider', () => {
     });
     expect(after2).toBe(4);
 
-    // Click again → back to 1×
+    // Click again → MAX (100)
     await canvas.click({ position: { x: 620, y: 530 } });
     const after3 = await page.evaluate(() => {
       const g = (window as any).__game;
       const combat = g.scene.getScene('CombatScene') as any;
+      return { speed: combat.combatSpeed as number, label: combat.speedBtnText.text as string };
+    });
+    expect(after3.speed).toBe(100);
+    expect(after3.label).toBe('Speed: MAX');
+
+    // Click again → back to 1×
+    await canvas.click({ position: { x: 620, y: 530 } });
+    const after4 = await page.evaluate(() => {
+      const g = (window as any).__game;
+      const combat = g.scene.getScene('CombatScene') as any;
       return combat.combatSpeed as number;
     });
-    expect(after3).toBe(1);
+    expect(after4).toBe(1);
   });
 });

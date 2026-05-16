@@ -369,11 +369,16 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private cycleSpeed(): void {
-    this.combatSpeed = this.combatSpeed === 1 ? 2 : this.combatSpeed === 2 ? 4 : 1;
-    this.speedBtnText.setText(`Speed: ${this.combatSpeed}×`);
+    // 1 → 2 → 4 → 100 (MAX) → 1
+    if (this.combatSpeed === 1) this.combatSpeed = 2;
+    else if (this.combatSpeed === 2) this.combatSpeed = 4;
+    else if (this.combatSpeed === 4) this.combatSpeed = 100;
+    else this.combatSpeed = 1;
+    this.speedBtnText.setText(this.combatSpeed === 100 ? "Speed: MAX" : `Speed: ${this.combatSpeed}×`);
   }
 
-  // Scale a duration by current speed (faster = shorter durations)
+  // Scale a duration by current speed (faster = shorter durations).
+  // MAX (100×) clamps to 1ms so animations effectively skip.
   private scaled(ms: number): number {
     return Math.max(1, Math.floor(ms / this.combatSpeed));
   }

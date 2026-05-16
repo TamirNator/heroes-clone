@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S26.0 — Speed `MAX` mode in combat
+**PM (direct):** Cycle is now `1× → 2× → 4× → MAX → 1×` where MAX = 100× (all durations clamp to 1ms). Combined with AUTO this effectively auto-resolves combat with no animation. Existing s17-1 cycle test updated to expect the new 4-step cycle (added assertion for `Speed: MAX` label).
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S25.3 — Share button on seeded maps (closes v1.12)
 **PM (direct):** On any seeded run (Daily or `?seed=N`), a small blue "Share" button appears below the seed label top-right. Clicking copies the canonical `${origin}/?seed=N` URL to the clipboard via `navigator.clipboard.writeText`. For `daily:` labels, the seed is reverse-derived from the FNV-1a hash of `"heroes-clone:DATE"`. Shows a brief toast top-center confirming the copy (or falls back to displaying the URL if clipboard API is denied).
 **Verification:** all 60 tests pass.
