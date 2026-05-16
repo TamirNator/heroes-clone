@@ -8,7 +8,13 @@ interface WindowWithAudio extends Window {
 }
 
 let ctx: AudioContext | null = null;
-let enabled = true;
+let enabled = (() => {
+  try {
+    return localStorage.getItem("heroes-clone:muted") !== "1";
+  } catch {
+    return true;
+  }
+})();
 
 function getCtx(): AudioContext | null {
   if (ctx) return ctx;
@@ -26,6 +32,20 @@ function getCtx(): AudioContext | null {
 
 export function setAudioEnabled(value: boolean): void {
   enabled = value;
+  try {
+    localStorage.setItem("heroes-clone:muted", value ? "0" : "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isAudioEnabled(): boolean {
+  return enabled;
+}
+
+export function toggleAudio(): boolean {
+  setAudioEnabled(!enabled);
+  return enabled;
 }
 
 function playTone(freq: number, durationMs: number, type: OscillatorType = "sine", volume = 0.1): void {

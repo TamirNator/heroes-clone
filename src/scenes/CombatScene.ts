@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { sfxAttackHit, sfxEnemyHit, sfxVictory, sfxDefeat } from "../audio";
+import { sfxAttackHit, sfxEnemyHit, sfxVictory, sfxDefeat, toggleAudio } from "../audio";
 
 type HeroStackState = {
   name: string;
@@ -317,6 +317,7 @@ export class CombatScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-O", () => this.toggleAuto());
     this.input.keyboard?.on("keydown-ONE", () => this.selectStack(0));
     this.input.keyboard?.on("keydown-TWO", () => this.selectStack(1));
+    this.input.keyboard?.on("keydown-M", () => toggleAudio());
     this.input.keyboard?.on("keydown-ESC", () => {
       clearCombatSave();
       this.scene.start("MapScene", {

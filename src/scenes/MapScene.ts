@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { sfxPickup } from "../audio";
+import { sfxPickup, toggleAudio } from "../audio";
 
 const COLS = 20;
 const ROWS = 15;
@@ -435,6 +435,11 @@ export class MapScene extends Phaser.Scene {
     // Help overlay — toggle with H or ?
     this.input.keyboard?.on("keydown-H", () => this.toggleHelp());
     this.input.keyboard?.on("keydown-FORWARD_SLASH", () => this.toggleHelp());
+    // Mute toggle — M
+    this.input.keyboard?.on("keydown-M", () => {
+      const on = toggleAudio();
+      this.showMuteToast(on);
+    });
 
     this.movesText = this.add
       .text(1280 - 20, 20, `Moves: ${this.remainingMoves}`, {
@@ -565,6 +570,20 @@ export class MapScene extends Phaser.Scene {
         onComplete: () => banner.destroy(),
       });
     }
+  }
+
+  private showMuteToast(enabled: boolean): void {
+    const text = enabled ? "Sound ON" : "Sound OFF";
+    const t = this.add
+      .text(640, 80, text, {
+        fontSize: "18px",
+        color: enabled ? "#44cc44" : "#cccccc",
+        backgroundColor: "#000000",
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(50);
+    this.tweens.add({ targets: t, alpha: 0, delay: 1000, duration: 400, onComplete: () => t.destroy() });
   }
 
   private confirmReset(): void {

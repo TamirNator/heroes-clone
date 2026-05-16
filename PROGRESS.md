@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S24.2 — Mute toggle (M key)
+**PM (direct):** Added `toggleAudio()` / `isAudioEnabled()` / `setAudioEnabled()` to `audio.ts`. Mute state persists to `localStorage["heroes-clone:muted"]` (independent of save). M key on MapScene shows a brief "Sound ON" / "Sound OFF" toast top-center (1s hold + 400ms fade). M key on CombatScene toggles silently (combat already has visual feedback). State loaded on first audio call.
+**Verification:** all 57 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S24.1 — Web Audio sound effects (no external assets)
 **PM (direct):** New `src/audio.ts` synthesizes tones via Web Audio API — no external sound files. Lazy AudioContext (browser autoplay policy requires user gesture). 5 SFX:
 - `sfxAttackHit` — 220Hz square 80ms (hero hits enemy)
