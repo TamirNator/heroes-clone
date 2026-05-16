@@ -562,11 +562,17 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
-    // Turn counter (left of Moves)
+    // Turn counter + difficulty label (top-left)
     if (!this.registry.has("turnCount")) this.registry.set("turnCount", 1);
     const turn = this.registry.get("turnCount") as number;
     this.turnLabel = this.add
       .text(20, 20, `Turn ${turn}`, { fontSize: "16px", color: "#cccccc" })
+      .setOrigin(0, 0)
+      .setDepth(20);
+    const diffMode = (this.registry.get("difficulty") as string | undefined) ?? "normal";
+    const diffColor = diffMode === "easy" ? "#44cc44" : diffMode === "hard" ? "#cc4444" : "#ffcc44";
+    this.add
+      .text(20, 42, diffMode.toUpperCase(), { fontSize: "11px", color: diffColor, fontStyle: "bold" })
       .setOrigin(0, 0)
       .setDepth(20);
 

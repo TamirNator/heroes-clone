@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S27.2 — Difficulty label on map UI
+**PM (direct):** New small uppercase difficulty label (`EASY` / `NORMAL` / `HARD`) under the turn counter top-left, color-coded green/gold/red. Player always knows what scaling is active.
+**Hiccup:** initial edit redeclared `const difficulty` clashing with an existing identifier in the enemy render block — Vite oxc parser rejected the file (every test failed because canvas never mounted). Fixed by renaming the second one to `diffMode`. Caught via dev-server 500 response in curl.
+**Verification:** all 60 tests pass after fix.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S27.1 — Random Game uses seeded RNG (shareable)
 **PM (direct):** Random Game button now picks a random 32-bit integer seed and routes through `startSeededGame`. Result: every Random Game shows a `seed:N` label and is shareable via the existing Share button (S25.3). Removed duplicate inline generation code from the Random Game handler.
 **Verification:** all 60 tests pass.
