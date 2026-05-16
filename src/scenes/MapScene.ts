@@ -557,6 +557,15 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
+    // Seed label (only on seeded runs)
+    const seedLabel = this.registry.get("seedLabel") as string | undefined;
+    if (seedLabel) {
+      this.add
+        .text(1280 - 20, 275, seedLabel, { fontSize: "11px", color: "#888888", fontStyle: "italic" })
+        .setOrigin(1, 0)
+        .setDepth(20);
+    }
+
     // Last combat outcome banner (briefly, if scene was entered with one)
     if (this.initData.lastOutcome) {
       const isVictory = this.initData.lastOutcome.startsWith("VICTORY");

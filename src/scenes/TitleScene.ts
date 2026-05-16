@@ -8,8 +8,19 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Skip title if URL has any query param (used by e2e tests via /?nointro).
+    // URL parameter handling:
+    //   /?seed=N    → start a deterministic random map seeded by N (Wordle-style share)
+    //   /?nointro   → skip title to default MapScene (used by e2e tests)
     if (typeof window !== "undefined" && window.location.search.length > 1) {
+      const params = new URLSearchParams(window.location.search);
+      const seedParam = params.get("seed");
+      if (seedParam !== null) {
+        const seedNum = parseInt(seedParam, 10);
+        if (!isNaN(seedNum)) {
+          this.startSeededGame(seedNum, `seed:${seedNum}`);
+          return;
+        }
+      }
       this.scene.start("MapScene");
       return;
     }
@@ -83,9 +94,13 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private startDailyChallenge(): void {
-    this.clearAllProgress();
     const today = todayDateString();
     const seed = seedFromString(`heroes-clone:${today}`);
+    this.startSeededGame(seed, `daily:${today}`);
+  }
+
+  private startSeededGame(seed: number, label: string): void {
+    this.clearAllProgress();
     const rng = mulberry32(seed);
     const terrain = MapScene.generateRandomTerrain(rng);
     const enemySpawns = MapScene.generateRandomEnemySpawns(terrain, rng);
@@ -96,7 +111,7 @@ export class TitleScene extends Phaser.Scene {
     this.game.registry.set("randomPotions", pickups.potions);
     this.game.registry.set("randomScrolls", pickups.scrolls);
     this.game.registry.set("randomTowns", towns);
-    this.game.registry.set("dailySeed", today);
+    this.game.registry.set("seedLabel", label);
     this.scene.start("MapScene", {});
   }
 
