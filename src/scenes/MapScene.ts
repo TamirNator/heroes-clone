@@ -113,6 +113,7 @@ type SaveData = {
   heroLevel?: number;
   consumed?: string[];
   consumedScrolls?: string[];
+  turnCount?: number;
   inCombat?: {
     enemyCol: number;
     enemyRow: number;
@@ -293,6 +294,9 @@ export class MapScene extends Phaser.Scene {
           for (const key of save.consumedScrolls) {
             scrollConsumedSet.add(key);
           }
+        }
+        if (save.turnCount !== undefined) {
+          this.registry.set("turnCount", save.turnCount);
         }
       } else {
         this.heroCol = 0;
@@ -802,6 +806,7 @@ export class MapScene extends Phaser.Scene {
       heroLevel: this.getHeroLevel(),
       consumed: Array.from(this.consumedPotions()),
       consumedScrolls: Array.from(this.consumedScrolls()),
+      turnCount: (this.registry.get("turnCount") as number | undefined) ?? 1,
     };
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));

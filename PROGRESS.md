@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S26.2 — Turn counter persisted to localStorage
+**PM (direct):** Added `turnCount?: number` to `SaveData`. `saveProgress()` writes the registry value; `loadProgress()` restores it on next page load. Turn counter now survives full browser refresh, matching all other game state.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S26.1 — Turn counter on map UI
 **PM (direct):** New `turnLabel` Text at top-left (20, 20). `registry["turnCount"]` lazy-init to 1; increments each `endTurn()` call. Persists across scene transitions (already in registry). Reset/New Game clears via existing flows. Displays "Turn N" in neutral gray for quick at-a-glance pacing reference.
 **Verification:** all 60 tests pass.
