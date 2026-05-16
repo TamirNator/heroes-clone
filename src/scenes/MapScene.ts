@@ -589,6 +589,15 @@ export class MapScene extends Phaser.Scene {
     // Turn counter + difficulty label (top-left)
     if (!this.registry.has("turnCount")) this.registry.set("turnCount", 1);
     const turn = this.registry.get("turnCount") as number;
+    // Update browser tab title to reflect current run mode
+    try {
+      const sLabel = this.registry.get("seedLabel") as string | undefined;
+      const remainingE = ENEMIES.length - (this.registry.get("defeatedEnemies") as Set<string>).size;
+      const modeStr = sLabel ? ` [${sLabel}]` : "";
+      document.title = `Heroes Clone${modeStr} — ${remainingE}/${ENEMIES.length} enemies`;
+    } catch {
+      /* ignore (server-side render / etc.) */
+    }
     this.turnLabel = this.add
       .text(20, 20, `Turn ${turn}`, { fontSize: "16px", color: "#cccccc" })
       .setOrigin(0, 0)

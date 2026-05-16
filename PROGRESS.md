@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S28.2 — Dynamic document.title (closes v1.13)
+**PM (direct):** MapScene `create()` updates `document.title` to `"Heroes Clone [seed:N] — 3/6 enemies"` on each scene start. Browser tab now reflects current run mode + progress at a glance, useful when multiple tabs are open.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped — closes v1.13.
+
+---
+
 ## S28.1 — Combat round limit (anti-stalemate)
 **PM (direct):** If a combat exceeds 50 rounds (extremely rare — would only happen with 0-damage rolls or weird state), force-end with a "STALEMATE" log line and return to map with `lastOutcome: "STALEMATE vs Goblin"`. Hero stays at encounter hex, army intact, no defeat tracked.
 **Verification:** all 60 tests pass.
