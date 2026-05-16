@@ -166,16 +166,19 @@ export class TitleScene extends Phaser.Scene {
     let totalKills = 0;
     let bestLevel = 0;
     let bestTurns = 0;
+    let dailyStreak = 0;
     try {
       totalKills = parseInt(localStorage.getItem("heroes-clone:totalKills") ?? "0", 10) || 0;
       bestLevel = parseInt(localStorage.getItem("heroes-clone:bestLevel") ?? "0", 10) || 0;
       bestTurns = parseInt(localStorage.getItem("heroes-clone:bestTurns") ?? "0", 10) || 0;
+      dailyStreak = parseInt(localStorage.getItem("heroes-clone:dailyStreak") ?? "0", 10) || 0;
     } catch {
       /* ignore */
     }
+    const streakLine = dailyStreak > 0 ? `Daily streak: ${dailyStreak} day${dailyStreak === 1 ? "" : "s"} 🔥\n` : "";
     const hallOfFame = bestLevel > 0
-      ? `Hall of Fame\nBest level on full clear: ${bestLevel}${bestTurns > 0 ? ` • Best clear time: ${bestTurns} turns` : ""}\n`
-      : `Hall of Fame\nNo full clears yet — defeat all 6 enemies!\n`;
+      ? `Hall of Fame\nBest level on full clear: ${bestLevel}${bestTurns > 0 ? ` • Best clear time: ${bestTurns} turns` : ""}\n${streakLine}`
+      : `Hall of Fame\nNo full clears yet — defeat all 6 enemies!\n${streakLine}`;
     const text = this.add
       .text(
         640,

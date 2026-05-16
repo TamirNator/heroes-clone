@@ -21,6 +21,17 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S28.0 — Daily streak counter
+**PM (direct):** On full-clear, if the run was a `daily:DATE` seeded game, update `localStorage["heroes-clone:dailyStreak"]`:
+- If yesterday's date won previously → increment streak
+- If older → reset to 1
+- If already won today → no change
+About modal now shows "Daily streak: N day(s) 🔥" when active. Encourages playing daily.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S27.2 — Difficulty label on map UI
 **PM (direct):** New small uppercase difficulty label (`EASY` / `NORMAL` / `HARD`) under the turn counter top-left, color-coded green/gold/red. Player always knows what scaling is active.
 **Hiccup:** initial edit redeclared `const difficulty` clashing with an existing identifier in the enemy render block — Vite oxc parser rejected the file (every test failed because canvas never mounted). Fixed by renaming the second one to `diffMode`. Caught via dev-server 500 response in curl.

@@ -443,6 +443,30 @@ export class MapScene extends Phaser.Scene {
       } catch {
         /* ignore */
       }
+      // Daily streak: if this was a daily run, update streak
+      try {
+        const seedLabel = this.registry.get("seedLabel") as string | undefined;
+        if (seedLabel?.startsWith("daily:")) {
+          const today = seedLabel.slice("daily:".length);
+          const lastWin = localStorage.getItem("heroes-clone:lastDailyWin");
+          if (lastWin !== today) {
+            // Compute streak
+            let streak = parseInt(localStorage.getItem("heroes-clone:dailyStreak") ?? "0", 10) || 0;
+            if (lastWin) {
+              const lastDate = new Date(lastWin + "T00:00:00Z").getTime();
+              const todayDate = new Date(today + "T00:00:00Z").getTime();
+              const dayMs = 24 * 60 * 60 * 1000;
+              streak = Math.round((todayDate - lastDate) / dayMs) === 1 ? streak + 1 : 1;
+            } else {
+              streak = 1;
+            }
+            localStorage.setItem("heroes-clone:lastDailyWin", today);
+            localStorage.setItem("heroes-clone:dailyStreak", String(streak));
+          }
+        }
+      } catch {
+        /* ignore */
+      }
     }
 
     // Help overlay — toggle with H or ?
