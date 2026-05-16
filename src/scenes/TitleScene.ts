@@ -174,14 +174,16 @@ export class TitleScene extends Phaser.Scene {
     const overlay = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.85).setOrigin(0.5).setDepth(100);
     let totalKills = 0;
     let bestLevel = 0;
+    let bestTurns = 0;
     try {
       totalKills = parseInt(localStorage.getItem("heroes-clone:totalKills") ?? "0", 10) || 0;
       bestLevel = parseInt(localStorage.getItem("heroes-clone:bestLevel") ?? "0", 10) || 0;
+      bestTurns = parseInt(localStorage.getItem("heroes-clone:bestTurns") ?? "0", 10) || 0;
     } catch {
       /* ignore */
     }
     const hallOfFame = bestLevel > 0
-      ? `Hall of Fame\nBest level on full clear: ${bestLevel}\n`
+      ? `Hall of Fame\nBest level on full clear: ${bestLevel}${bestTurns > 0 ? ` • Best clear time: ${bestTurns} turns` : ""}\n`
       : `Hall of Fame\nNo full clears yet — defeat all 6 enemies!\n`;
     const text = this.add
       .text(

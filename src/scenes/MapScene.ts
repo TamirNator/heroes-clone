@@ -764,8 +764,22 @@ export class MapScene extends Phaser.Scene {
     this.gameWon = true;
 
     this.add.rectangle(640, 360, 1280, 720, 0x000000).setAlpha(0.7).setDepth(100);
-    this.add.text(640, 300, "GAME WON!", { fontSize: "64px", color: "#44cc44" }).setOrigin(0.5).setDepth(101);
-    this.add.text(640, 370, "All enemies defeated", { fontSize: "24px", color: "#ffffff" }).setOrigin(0.5).setDepth(101);
+    this.add.text(640, 280, "GAME WON!", { fontSize: "64px", color: "#44cc44" }).setOrigin(0.5).setDepth(101);
+
+    const turns = (this.registry.get("turnCount") as number | undefined) ?? 1;
+    let bestTurns = Infinity;
+    try {
+      const raw = localStorage.getItem("heroes-clone:bestTurns");
+      if (raw) bestTurns = parseInt(raw, 10) || Infinity;
+    } catch { /* ignore */ }
+    let summary = `All enemies defeated in ${turns} turn${turns === 1 ? "" : "s"}`;
+    if (turns < bestTurns) {
+      summary += "  •  NEW BEST!";
+      try { localStorage.setItem("heroes-clone:bestTurns", String(turns)); } catch { /* ignore */ }
+    } else if (isFinite(bestTurns)) {
+      summary += `  •  best: ${bestTurns}`;
+    }
+    this.add.text(640, 360, summary, { fontSize: "20px", color: "#ffffff" }).setOrigin(0.5).setDepth(101);
 
     const newGameBtn = this.add
       .rectangle(640, 460, 200, 50, 0x2a3a4a)

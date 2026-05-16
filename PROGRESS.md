@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S27.0 — Game-won shows turn count + best-clear tracking (speedrun)
+**PM (direct):** Win overlay now displays `"All enemies defeated in N turns"`. Compares to `localStorage["heroes-clone:bestTurns"]`; if better, shows `"NEW BEST!"` and writes it. Otherwise shows `"best: M"`. About modal in TitleScene also surfaces the best-clear time alongside Hall of Fame best level.
+**Effect:** Adds a speedrun layer — players motivated to clear faster on subsequent runs.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S26.2 — Turn counter persisted to localStorage
 **PM (direct):** Added `turnCount?: number` to `SaveData`. `saveProgress()` writes the registry value; `loadProgress()` restores it on next page load. Turn counter now survives full browser refresh, matching all other game state.
 **Verification:** all 60 tests pass.
