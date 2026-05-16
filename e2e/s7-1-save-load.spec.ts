@@ -133,6 +133,8 @@ test.describe('S7.1 — save/load progress', () => {
     // Click Reset button — center at game coords (1210, 125), canvas at 1:1 scale
     const canvas = page.locator('canvas');
     await canvas.click({ position: { x: 1210, y: 125 } });
+    // Confirm dialog: click "Yes, reset" at (540, 410)
+    await canvas.click({ position: { x: 540, y: 410 } });
 
     // Wait for MapScene to restart with 3 enemies
     await page.waitForFunction(() => {

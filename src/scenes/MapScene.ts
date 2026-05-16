@@ -468,17 +468,7 @@ export class MapScene extends Phaser.Scene {
       this.resetBtn.setFillStyle(DEFAULT_FILL);
     });
     this.resetBtn.on("pointerdown", () => {
-      if (!this.isAnimating && !this.gameWon) {
-        this.clearProgress();
-        this.registry.set("heroArmy", freshArmy());
-        this.registry.set("heroHp", this.getHeroHp());
-        this.registry.set("heroXp", 0);
-        this.registry.set("heroLevel", 1);
-        (this.registry.get("defeatedEnemies") as Set<string>).clear();
-        this.consumedPotions().clear();
-        this.consumedScrolls().clear();
-        this.scene.start("MapScene", {});
-      }
+      if (!this.isAnimating && !this.gameWon) this.confirmReset();
     });
 
     // Title button — return to title screen (no save loss)
@@ -551,6 +541,50 @@ export class MapScene extends Phaser.Scene {
         onComplete: () => banner.destroy(),
       });
     }
+  }
+
+  private confirmReset(): void {
+    const overlay = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7).setOrigin(0.5).setDepth(180);
+    const panel = this.add.rectangle(640, 360, 460, 200, 0x1a1a1a).setStrokeStyle(2, 0xcc4444).setOrigin(0.5).setDepth(181);
+    const title = this.add
+      .text(640, 300, "Reset progress?", { fontSize: "24px", color: "#cc4444", fontStyle: "bold" })
+      .setOrigin(0.5).setDepth(182);
+    const body = this.add
+      .text(640, 345, "This will wipe your save and start over.", { fontSize: "14px", color: "#cccccc" })
+      .setOrigin(0.5).setDepth(182);
+    const yesBtn = this.add
+      .rectangle(540, 410, 140, 40, 0x2a3a4a).setStrokeStyle(2, 0xcc4444).setOrigin(0.5).setDepth(182).setInteractive();
+    this.add.text(540, 410, "Yes, reset", { fontSize: "16px", color: "#cc4444" }).setOrigin(0.5).setDepth(183);
+    const noBtn = this.add
+      .rectangle(740, 410, 140, 40, 0x2a3a4a).setStrokeStyle(2, 0x888888).setOrigin(0.5).setDepth(182).setInteractive();
+    this.add.text(740, 410, "Cancel", { fontSize: "16px", color: "#cccccc" }).setOrigin(0.5).setDepth(183);
+
+    const dismiss = () => {
+      overlay.destroy();
+      panel.destroy();
+      title.destroy();
+      body.destroy();
+      yesBtn.destroy();
+      noBtn.destroy();
+      // dismiss labels too — but their lifetimes are tied to scene; destroy via re-fetch isn't needed
+    };
+
+    yesBtn.on("pointerover", () => yesBtn.setFillStyle(0x4a2a2a));
+    yesBtn.on("pointerout", () => yesBtn.setFillStyle(0x2a3a4a));
+    yesBtn.on("pointerdown", () => {
+      this.clearProgress();
+      this.registry.set("heroArmy", freshArmy());
+      this.registry.set("heroHp", this.getHeroHp());
+      this.registry.set("heroXp", 0);
+      this.registry.set("heroLevel", 1);
+      (this.registry.get("defeatedEnemies") as Set<string>).clear();
+      this.consumedPotions().clear();
+      this.consumedScrolls().clear();
+      this.scene.start("MapScene", {});
+    });
+    noBtn.on("pointerover", () => noBtn.setFillStyle(0x4a6a8a));
+    noBtn.on("pointerout", () => noBtn.setFillStyle(0x2a3a4a));
+    noBtn.on("pointerdown", dismiss);
   }
 
   private toggleHelp(): void {

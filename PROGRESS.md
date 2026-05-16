@@ -21,6 +21,14 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S23.1 — Reset confirm dialog (prevent accidental save wipes)
+**PM (direct):** Reset button click now opens a confirm overlay (dark scrim + panel + "Yes, reset" / "Cancel" buttons). Yes wipes save and restarts; Cancel dismisses without changes. Refactored direct wipe code into new `confirmReset()` method.
+**Test updates:** 4 tests that click Reset directly (s7-1, s9-1, s11-0, s11-1) now also click the "Yes, reset" button at (540, 410) immediately after.
+**Verification:** all 57 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S23.0 — Smart enemy targeting on Hard difficulty
 **PM (direct):** Refactored `doEnemyAttackPeak` to use `chooseEnemyTarget()` helper instead of hardcoded `activeStackIndex`. On Easy/Normal: enemy attacks the active hero stack (existing behavior, all tests still pass). On Hard: focus-fires the alive hero stack with lowest `currentHp`. Routed-stack auto-switch only fires when the active stack dies (not when a non-active targeted stack dies). Defeat detection now checks "all stacks dead" rather than "active stack dead with no fallback". New `spawnDeathPuffForStack` variant takes explicit stack index for proper visual feedback when the targeted-not-active stack loses units.
 **Initial attempt** broke 7 tests by changing target unconditionally — refined to gate on difficulty.

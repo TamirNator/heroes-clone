@@ -202,6 +202,8 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     // Step 7: click Reset, HP should return to 28/28
     const canvas = page.locator('canvas');
     await canvas.click({ position: { x: 1210, y: 125 } });
+    // Confirm dialog: click "Yes, reset" at (540, 410)
+    await canvas.click({ position: { x: 540, y: 410 } });
 
     await page.waitForFunction(() => {
       const g = (window as any).__game;

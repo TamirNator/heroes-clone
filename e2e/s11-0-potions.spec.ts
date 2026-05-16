@@ -155,6 +155,8 @@ test.describe('S11.0 — HP potions on map', () => {
     // Click Reset — should restore all 3 potions
     const canvas = page.locator('canvas');
     await canvas.click({ position: { x: 1210, y: 125 } });
+    // Confirm dialog: click "Yes, reset" at (540, 410)
+    await canvas.click({ position: { x: 540, y: 410 } });
 
     await page.waitForFunction(() => {
       const g = (window as any).__game;
