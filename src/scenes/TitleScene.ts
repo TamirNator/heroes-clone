@@ -155,6 +155,7 @@ export class TitleScene extends Phaser.Scene {
     game.registry.remove("heroXp");
     game.registry.remove("heroLevel");
     game.registry.remove("heroArmy");
+    game.registry.remove("turnCount");
   }
 
   private makeButton(x: number, y: number, label: string, color: string, onClick: () => void): void {

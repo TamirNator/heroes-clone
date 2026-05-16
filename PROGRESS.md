@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S26.1 — Turn counter on map UI
+**PM (direct):** New `turnLabel` Text at top-left (20, 20). `registry["turnCount"]` lazy-init to 1; increments each `endTurn()` call. Persists across scene transitions (already in registry). Reset/New Game clears via existing flows. Displays "Turn N" in neutral gray for quick at-a-glance pacing reference.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S26.0 — Speed `MAX` mode in combat
 **PM (direct):** Cycle is now `1× → 2× → 4× → MAX → 1×` where MAX = 100× (all durations clamp to 1ms). Combined with AUTO this effectively auto-resolves combat with no animation. Existing s17-1 cycle test updated to expect the new 4-step cycle (added assertion for `Speed: MAX` label).
 **Verification:** all 60 tests pass.

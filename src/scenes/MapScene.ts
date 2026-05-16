@@ -154,6 +154,7 @@ export class MapScene extends Phaser.Scene {
   private heroXpLabel!: Phaser.GameObjects.Text;
   private gameWon = false;
   public helpOverlay?: Phaser.GameObjects.Container;
+  private turnLabel?: Phaser.GameObjects.Text;
   private initData: {
     defeatedCol?: number;
     defeatedRow?: number;
@@ -557,6 +558,14 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
+    // Turn counter (left of Moves)
+    if (!this.registry.has("turnCount")) this.registry.set("turnCount", 1);
+    const turn = this.registry.get("turnCount") as number;
+    this.turnLabel = this.add
+      .text(20, 20, `Turn ${turn}`, { fontSize: "16px", color: "#cccccc" })
+      .setOrigin(0, 0)
+      .setDepth(20);
+
     // Seed label + Share button (only on seeded runs)
     const seedLabel = this.registry.get("seedLabel") as string | undefined;
     if (seedLabel) {
@@ -688,6 +697,7 @@ export class MapScene extends Phaser.Scene {
       this.registry.set("heroHp", this.getHeroHp());
       this.registry.set("heroXp", 0);
       this.registry.set("heroLevel", 1);
+      this.registry.set("turnCount", 1);
       (this.registry.get("defeatedEnemies") as Set<string>).clear();
       this.consumedPotions().clear();
       this.consumedScrolls().clear();
@@ -821,6 +831,9 @@ export class MapScene extends Phaser.Scene {
   private endTurn(): void {
     this.remainingMoves = MOVEMENT_PER_TURN;
     this.movesText.setText(`Moves: ${this.remainingMoves}`);
+    const turn = ((this.registry.get("turnCount") as number | undefined) ?? 1) + 1;
+    this.registry.set("turnCount", turn);
+    this.turnLabel?.setText(`Turn ${turn}`);
     this.runEnemyTurn();
   }
 
