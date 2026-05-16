@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S28.1 — Combat round limit (anti-stalemate)
+**PM (direct):** If a combat exceeds 50 rounds (extremely rare — would only happen with 0-damage rolls or weird state), force-end with a "STALEMATE" log line and return to map with `lastOutcome: "STALEMATE vs Goblin"`. Hero stays at encounter hex, army intact, no defeat tracked.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S28.0 — Daily streak counter
 **PM (direct):** On full-clear, if the run was a `daily:DATE` seeded game, update `localStorage["heroes-clone:dailyStreak"]`:
 - If yesterday's date won previously → increment streak

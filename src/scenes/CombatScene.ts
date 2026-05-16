@@ -574,6 +574,22 @@ export class CombatScene extends Phaser.Scene {
           this.roundNumber += 1;
           this.roundText.setText(`Round ${this.roundNumber}`);
           this.persistCombatState();
+          // Stalemate safety: if combat drags on >50 rounds, force-end with no winner
+          if (this.roundNumber > 50) {
+            this.combatOver = true;
+            this.attackBtn.setAlpha(0.5).disableInteractive();
+            this.addLogLine("STALEMATE — combat ends");
+            clearCombatSave();
+            this.time.delayedCall(1500, () => {
+              this.scene.start("MapScene", {
+                heroCol: this.initData.enemyCol,
+                heroRow: this.initData.enemyRow,
+                heroArmy: this.heroArmy,
+                lastOutcome: `STALEMATE vs ${this.enemyName}`,
+              });
+            });
+            return;
+          }
           if (this.autoAttack) {
             this.time.delayedCall(200, () => {
               if (this.autoAttack && !this.combatOver && !this.isCombatAnimating) this.onAttack();
