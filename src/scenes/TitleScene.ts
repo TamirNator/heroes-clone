@@ -72,17 +72,8 @@ export class TitleScene extends Phaser.Scene {
     });
     buttonY += 70;
     this.makeButton(640, buttonY, "Random Game", "#88ccff", () => {
-      this.clearAllProgress();
-      const terrain = MapScene.generateRandomTerrain();
-      const enemySpawns = MapScene.generateRandomEnemySpawns(terrain);
-      const pickups = MapScene.generateRandomPickups(terrain, enemySpawns);
-      const towns = MapScene.generateRandomTowns(terrain, enemySpawns, pickups);
-      this.game.registry.set("randomTerrain", terrain);
-      this.game.registry.set("randomEnemySpawns", enemySpawns);
-      this.game.registry.set("randomPotions", pickups.potions);
-      this.game.registry.set("randomScrolls", pickups.scrolls);
-      this.game.registry.set("randomTowns", towns);
-      this.scene.start("MapScene", {});
+      const seed = Math.floor(Math.random() * 0xffffffff);
+      this.startSeededGame(seed, `seed:${seed}`);
     });
     buttonY += 70;
     this.makeButton(640, buttonY, "Daily", "#cc88ff", () => this.startDailyChallenge());

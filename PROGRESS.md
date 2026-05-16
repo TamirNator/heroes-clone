@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S27.1 — Random Game uses seeded RNG (shareable)
+**PM (direct):** Random Game button now picks a random 32-bit integer seed and routes through `startSeededGame`. Result: every Random Game shows a `seed:N` label and is shareable via the existing Share button (S25.3). Removed duplicate inline generation code from the Random Game handler.
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S27.0 — Game-won shows turn count + best-clear tracking (speedrun)
 **PM (direct):** Win overlay now displays `"All enemies defeated in N turns"`. Compares to `localStorage["heroes-clone:bestTurns"]`; if better, shows `"NEW BEST!"` and writes it. Otherwise shows `"best: M"`. About modal in TitleScene also surfaces the best-clear time alongside Hall of Fame best level.
 **Effect:** Adds a speedrun layer — players motivated to clear faster on subsequent runs.
