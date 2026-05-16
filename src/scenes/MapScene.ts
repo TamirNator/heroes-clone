@@ -557,13 +557,27 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20);
 
-    // Seed label (only on seeded runs)
+    // Seed label + Share button (only on seeded runs)
     const seedLabel = this.registry.get("seedLabel") as string | undefined;
     if (seedLabel) {
       this.add
         .text(1280 - 20, 275, seedLabel, { fontSize: "11px", color: "#888888", fontStyle: "italic" })
         .setOrigin(1, 0)
         .setDepth(20);
+
+      const shareBtn = this.add
+        .rectangle(1280 - 20, 300, 100, 22, DEFAULT_FILL)
+        .setStrokeStyle(1, 0x88ccff)
+        .setOrigin(1, 0)
+        .setDepth(20)
+        .setInteractive();
+      this.add
+        .text(1280 - 20 - 50, 300 + 11, "Share", { fontSize: "11px", color: "#88ccff" })
+        .setOrigin(0.5, 0.5)
+        .setDepth(21);
+      shareBtn.on("pointerover", () => shareBtn.setFillStyle(0x4a6a8a));
+      shareBtn.on("pointerout", () => shareBtn.setFillStyle(DEFAULT_FILL));
+      shareBtn.on("pointerdown", () => this.shareSeedUrl(seedLabel));
     }
 
     // Last combat outcome banner (briefly, if scene was entered with one)
@@ -587,6 +601,43 @@ export class MapScene extends Phaser.Scene {
         onComplete: () => banner.destroy(),
       });
     }
+  }
+
+  private shareSeedUrl(seedLabel: string): void {
+    // seedLabel is "seed:N" or "daily:YYYY-MM-DD"
+    let seed: number | null = null;
+    if (seedLabel.startsWith("seed:")) {
+      const n = parseInt(seedLabel.slice("seed:".length), 10);
+      if (!isNaN(n)) seed = n;
+    } else if (seedLabel.startsWith("daily:")) {
+      // Reverse-derive: daily uses seedFromString("heroes-clone:" + date)
+      const date = seedLabel.slice("daily:".length);
+      let h = 0x811c9dc5;
+      const s = `heroes-clone:${date}`;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      seed = h >>> 0;
+    }
+    if (seed === null) return;
+    const url = `${window.location.origin}/?seed=${seed}`;
+    let toastText = "URL copied to clipboard!";
+    try {
+      void navigator.clipboard.writeText(url);
+    } catch {
+      toastText = `Share URL: ${url}`;
+    }
+    const t = this.add
+      .text(640, 80, toastText, {
+        fontSize: "14px",
+        color: "#88ccff",
+        backgroundColor: "#000000",
+        padding: { x: 12, y: 6 },
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(50);
+    this.tweens.add({ targets: t, alpha: 0, delay: 2000, duration: 500, onComplete: () => t.destroy() });
   }
 
   private showMuteToast(enabled: boolean): void {

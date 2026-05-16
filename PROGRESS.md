@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S25.3 — Share button on seeded maps (closes v1.12)
+**PM (direct):** On any seeded run (Daily or `?seed=N`), a small blue "Share" button appears below the seed label top-right. Clicking copies the canonical `${origin}/?seed=N` URL to the clipboard via `navigator.clipboard.writeText`. For `daily:` labels, the seed is reverse-derived from the FNV-1a hash of `"heroes-clone:DATE"`. Shows a brief toast top-center confirming the copy (or falls back to displaying the URL if clipboard API is denied).
+**Verification:** all 60 tests pass.
+**Status:** ✅ shipped — closes v1.12 (seed sharing complete).
+
+---
+
 ## S25.2 — Seed sharing via URL (?seed=N)
 **PM (direct):** Refactored Daily Challenge → general `startSeededGame(seed, label)` helper. TitleScene's URL handler now parses `?seed=N` and starts a seeded run with label `"seed:N"`. Daily uses `seed:fromString("heroes-clone:YYYY-MM-DD")` and label `"daily:YYYY-MM-DD"`. The seed label renders top-right on map (italic small text below enemy counter), only on seeded runs. Enables Wordle-style shareable map URLs.
 **Verification:** new e2e `s25-2-seed-url.spec.ts` — (a) same seed → identical terrain across reloads, (b) different seeds → different terrain. All 60 tests pass.
