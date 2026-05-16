@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { sfxPickup } from "../audio";
 
 const COLS = 20;
 const ROWS = 15;
@@ -876,12 +877,14 @@ export class MapScene extends Phaser.Scene {
         const potion = potionList.find(p => p.col === col && p.row === row);
         if (potion && !this.consumedPotions().has(`${col},${row}`)) {
           this.consumePotion(col, row);
+          sfxPickup();
         }
         const randomS = this.registry.get("randomScrolls") as Array<{ col: number; row: number }> | undefined;
         const scrollList = randomS ?? SCROLLS;
         const scroll = scrollList.find(s => s.col === col && s.row === row);
         if (scroll && !this.consumedScrolls().has(`${col},${row}`)) {
           this.consumeScroll(col, row);
+          sfxPickup();
         }
         const randomT = this.registry.get("randomTowns") as Array<{ col: number; row: number }> | undefined;
         const townList2 = randomT ?? TOWNS;

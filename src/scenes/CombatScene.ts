@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { sfxAttackHit, sfxEnemyHit, sfxVictory, sfxDefeat } from "../audio";
 
 type HeroStackState = {
   name: string;
@@ -528,6 +529,7 @@ export class CombatScene extends Phaser.Scene {
         );
         this.enemyBarFill.displayWidth = Math.max(0, (this.enemyHp / this.enemyMaxHp) * BAR_WIDTH);
         this.spawnDamageText(960, 400, dmg);
+        sfxAttackHit();
         this.shakeOnHit(this.enemySprite);
         const killed = unitsRemaining(oldEnemyHp, this.enemyHpPerUnit) - unitsRemaining(newEnemyHp, this.enemyHpPerUnit);
         if (killed > 0) this.spawnDeathPuff("enemy", killed);
@@ -637,6 +639,7 @@ export class CombatScene extends Phaser.Scene {
       (targetStack.currentHp / stackMax) * HERO_BAR_WIDTH
     );
     this.spawnDamageText(HERO_STACK_X[targetIdx]!, 400, dmg);
+    sfxEnemyHit();
     this.shakeOnHit(this.heroSprites[targetIdx]!);
     const heroKilled = unitsRemaining(oldHeroHp, targetStack.hpPerUnit) - unitsRemaining(targetStack.currentHp, targetStack.hpPerUnit);
     if (heroKilled > 0) this.spawnDeathPuffForStack(targetIdx, heroKilled);
@@ -679,6 +682,7 @@ export class CombatScene extends Phaser.Scene {
 
   private showOutcome(victory: boolean): void {
     clearCombatSave();
+    if (victory) sfxVictory(); else sfxDefeat();
     const text = victory ? "VICTORY!" : "DEFEAT";
     const color = victory ? "#44cc44" : "#cc4444";
     this.addLogLine(text);

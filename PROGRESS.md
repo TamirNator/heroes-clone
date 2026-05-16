@@ -21,6 +21,19 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S24.1 — Web Audio sound effects (no external assets)
+**PM (direct):** New `src/audio.ts` synthesizes tones via Web Audio API — no external sound files. Lazy AudioContext (browser autoplay policy requires user gesture). 5 SFX:
+- `sfxAttackHit` — 220Hz square 80ms (hero hits enemy)
+- `sfxEnemyHit` — 160Hz sawtooth 80ms (enemy hits hero)
+- `sfxPickup` — 880Hz sine 120ms (potion/scroll grab)
+- `sfxVictory` — 523/659/784Hz triangle arpeggio (C-E-G ascending)
+- `sfxDefeat` — 220→165Hz sawtooth descending
+Wired into CombatScene (attack/enemy attack peaks + outcome) and MapScene (potion/scroll consume). All calls wrapped try/catch — tests run silently since no audio assertion is meaningful.
+**Verification:** all 57 tests pass.
+**Status:** ✅ shipped (PM direct).
+
+---
+
 ## S23.2 — Enemy loot drops (closes v1.9)
 **PM (direct):** Every combat victory has a 30% chance to drop loot (50/50 between +5 HP heal and +3 XP). Applied in MapScene's isSceneTransition block after `applyXpGain`. The drop result is appended to `lastOutcome` so the on-map banner shows "VICTORY: defeated Goblin (+2 XP) — Loot: +5 HP". Loot rate configurable via `registry["lootChance"]` (default 0.3); tests asserting exact post-victory HP/XP set it to 0 (s10-0, s9-1, s6-1, s6-3, s11-0, s11-1, s7-1 all patched).
 **Verification:** all 57 tests pass.
