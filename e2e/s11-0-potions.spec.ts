@@ -21,6 +21,7 @@ test.describe('S11.0 — HP potions on map', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     await page.screenshot({ path: 'test-results/s11-0-initial.png' });
 

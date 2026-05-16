@@ -69,6 +69,7 @@ async function defeatEnemy(page: any, enemyKey: string, attacks: number) {
   }
 
   await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 }
 
 test.describe('S10.0 — hero XP + levels', () => {
@@ -77,6 +78,7 @@ test.describe('S10.0 — hero XP + levels', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     const hpLabel = await getHpLabelText(page);
     expect(hpLabel).toBe('HP: 28/28'); // default army: 5×4 + 4×2 = 28
@@ -102,6 +104,7 @@ test.describe('S10.0 — hero XP + levels', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     // Teleport adjacent to Goblin at (4,4)
     await page.evaluate(() => {

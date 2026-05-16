@@ -21,6 +21,7 @@ test.describe('S11.1 — XP scrolls on map', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     const count = await countScrollSprites(page);
     expect(count).toBe(2);

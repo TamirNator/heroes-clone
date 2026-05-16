@@ -85,6 +85,7 @@ test.describe('S7.1 — save/load progress', () => {
     // Reload to start fresh with cleared storage
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     await defeatGoblin(page);
 

@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S23.2 — Enemy loot drops (closes v1.9)
+**PM (direct):** Every combat victory has a 30% chance to drop loot (50/50 between +5 HP heal and +3 XP). Applied in MapScene's isSceneTransition block after `applyXpGain`. The drop result is appended to `lastOutcome` so the on-map banner shows "VICTORY: defeated Goblin (+2 XP) — Loot: +5 HP". Loot rate configurable via `registry["lootChance"]` (default 0.3); tests asserting exact post-victory HP/XP set it to 0 (s10-0, s9-1, s6-1, s6-3, s11-0, s11-1, s7-1 all patched).
+**Verification:** all 57 tests pass.
+**Status:** ✅ shipped — closes v1.9 (smart AI + confirm + loot).
+
+---
+
 ## S23.1 — Reset confirm dialog (prevent accidental save wipes)
 **PM (direct):** Reset button click now opens a confirm overlay (dark scrim + panel + "Yes, reset" / "Cancel" buttons). Yes wipes save and restarts; Cancel dismisses without changes. Refactored direct wipe code into new `confirmReset()` method.
 **Test updates:** 4 tests that click Reset directly (s7-1, s9-1, s11-0, s11-1) now also click the "Yes, reset" button at (540, 410) immediately after.

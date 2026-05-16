@@ -29,6 +29,7 @@ async function openTrollCombat(page: any) {
     (g.registry.get('defeatedEnemies') as Set<string>).clear();
   });
   await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
   await teleportHero(page, 15, 10);
 
   const pos = await page.evaluate(() => {

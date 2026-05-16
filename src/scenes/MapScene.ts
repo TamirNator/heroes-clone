@@ -228,6 +228,29 @@ export class MapScene extends Phaser.Scene {
       }
       if (this.initData.xpGained !== undefined) {
         this.applyXpGain(this.initData.xpGained);
+        // Loot drop: 30% chance after any victory to grant +5 HP or +3 XP (registry override for tests)
+        const lootChance = (this.registry.get("lootChance") as number | undefined) ?? 0.3;
+        if (Math.random() < lootChance) {
+          const heal = Math.random() < 0.5;
+          if (heal) {
+            const army = this.getHeroArmy();
+            let remaining = 5;
+            for (const stack of army) {
+              const stackMax = stack.count * stack.hpPerUnit;
+              if (stack.currentHp < stackMax && remaining > 0) {
+                const added = Math.min(remaining, stackMax - stack.currentHp);
+                stack.currentHp += added;
+                remaining -= added;
+              }
+            }
+            this.registry.set("heroArmy", army);
+            this.registry.set("heroHp", this.getHeroHp());
+            this.initData.lastOutcome = (this.initData.lastOutcome ?? "") + " — Loot: +5 HP";
+          } else {
+            this.applyXpGain(3);
+            this.initData.lastOutcome = (this.initData.lastOutcome ?? "") + " — Loot: +3 XP";
+          }
+        }
       }
       this.saveProgress();
     } else {

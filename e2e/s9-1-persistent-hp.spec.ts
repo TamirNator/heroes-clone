@@ -45,6 +45,7 @@ test.describe('S9.1 — persistent hero HP between combats', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
     // Step 1: verify fresh HP label "HP: 28/28" (default army: Swordsmen 5×4=20 + Archers 4×2=8)
     const initialLabel = await getHpLabelText(page);

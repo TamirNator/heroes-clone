@@ -60,6 +60,7 @@ async function defeatEnemyViaAttack(page: any, enemyKey: string) {
   }
 
   await waitForScene(page, 'MapScene');
+    await page.evaluate(() => (window as any).__game.registry.set('lootChance', 0));
 
   // Wait for gameWon to be set — confirms create() fully completed with win overlay
   await page.waitForFunction(() => {
