@@ -430,6 +430,14 @@ export class MapScene extends Phaser.Scene {
     const defeated = this.registry.get("defeatedEnemies") as Set<string>;
     if (defeated.size >= ENEMIES.length) {
       this.renderWinOverlay();
+      // Record hall-of-fame best level reached on full clears
+      try {
+        const level = this.getHeroLevel();
+        const prevBest = parseInt(localStorage.getItem("heroes-clone:bestLevel") ?? "0", 10) || 0;
+        if (level > prevBest) localStorage.setItem("heroes-clone:bestLevel", String(level));
+      } catch {
+        /* ignore */
+      }
     }
 
     // Help overlay — toggle with H or ?

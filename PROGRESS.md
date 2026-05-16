@@ -21,6 +21,17 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S25.0 — Hall of Fame in About modal
+**PM (direct):** On full-clear (GAME WON), record the hero's level to `localStorage["heroes-clone:bestLevel"]` (only if it beats the previous best). About modal in TitleScene shows "Hall of Fame — Best level on full clear: N" plus the existing total-kills counter. If no full clear yet, shows "No full clears yet — defeat all 6 enemies!". Persists across runs and resets.
+**Status:** ✅ shipped (PM direct). All 57 tests pass.
+
+---
+
+## S24.3 — Help overlay mentions M key (closes v1.10)
+**PM (direct):** Added a `GLOBAL` section to the help overlay text listing `M — toggle sound on/off` alongside the existing H/?. Tag v1.10.0 bundles S24.1+S24.2+S24.3.
+
+---
+
 ## S24.2 — Mute toggle (M key)
 **PM (direct):** Added `toggleAudio()` / `isAudioEnabled()` / `setAudioEnabled()` to `audio.ts`. Mute state persists to `localStorage["heroes-clone:muted"]` (independent of save). M key on MapScene shows a brief "Sound ON" / "Sound OFF" toast top-center (1s hold + 400ms fade). M key on CombatScene toggles silently (combat already has visual feedback). State loaded on first audio call.
 **Verification:** all 57 tests pass.
