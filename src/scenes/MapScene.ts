@@ -959,7 +959,7 @@ export class MapScene extends Phaser.Scene {
     return TERRAIN_OVERRIDES[`${col},${row}`] ?? "grass";
   }
 
-  static generateRandomTerrain(): Record<string, Terrain> {
+  static generateRandomTerrain(rng: () => number = Math.random): Record<string, Terrain> {
     // Cells we must NOT block: hero spawn (0,0), all enemy spawns, all pickups.
     const blocked = new Set<string>();
     blocked.add("0,0");
@@ -973,16 +973,16 @@ export class MapScene extends Phaser.Scene {
       let attempts = 0;
       while (placed < count && attempts < count * 20) {
         attempts++;
-        const col = Math.floor(Math.random() * COLS);
-        const row = Math.floor(Math.random() * ROWS);
+        const col = Math.floor(rng() * COLS);
+        const row = Math.floor(rng() * ROWS);
         const key = `${col},${row}`;
         if (blocked.has(key) || overrides[key]) continue;
         overrides[key] = terrain;
         placed++;
       }
     };
-    place("water", 6 + Math.floor(Math.random() * 5)); // 6-10 water tiles
-    place("forest", 8 + Math.floor(Math.random() * 6)); // 8-13 forest tiles
+    place("water", 6 + Math.floor(rng() * 5)); // 6-10 water tiles
+    place("forest", 8 + Math.floor(rng() * 6)); // 8-13 forest tiles
     return overrides;
   }
 
@@ -990,7 +990,8 @@ export class MapScene extends Phaser.Scene {
   static generateRandomTowns(
     terrain?: Record<string, Terrain>,
     enemySpawns?: Array<{ col: number; row: number }>,
-    pickups?: { potions: Array<{ col: number; row: number }>; scrolls: Array<{ col: number; row: number }> }
+    pickups?: { potions: Array<{ col: number; row: number }>; scrolls: Array<{ col: number; row: number }> },
+    rng: () => number = Math.random
   ): Array<{ col: number; row: number }> {
     const used = new Set<string>();
     used.add("0,0");
@@ -1003,8 +1004,8 @@ export class MapScene extends Phaser.Scene {
     let attempts = 0;
     while (out.length < TOWNS.length && attempts < 200) {
       attempts++;
-      const col = Math.floor(Math.random() * COLS);
-      const row = Math.floor(Math.random() * ROWS);
+      const col = Math.floor(rng() * COLS);
+      const row = Math.floor(rng() * ROWS);
       const key = `${col},${row}`;
       if (used.has(key)) continue;
       if (terrain && terrain[key] === "water") continue;
@@ -1017,7 +1018,8 @@ export class MapScene extends Phaser.Scene {
   // Generate random pickup positions (potions + scrolls) avoiding hero spawn and water tiles.
   static generateRandomPickups(
     terrain?: Record<string, Terrain>,
-    enemySpawns?: Array<{ col: number; row: number }>
+    enemySpawns?: Array<{ col: number; row: number }>,
+    rng: () => number = Math.random
   ): { potions: Array<{ col: number; row: number }>; scrolls: Array<{ col: number; row: number }> } {
     const used = new Set<string>();
     used.add("0,0");
@@ -1027,8 +1029,8 @@ export class MapScene extends Phaser.Scene {
       let attempts = 0;
       while (out.length < count && attempts < count * 30) {
         attempts++;
-        const col = Math.floor(Math.random() * COLS);
-        const row = Math.floor(Math.random() * ROWS);
+        const col = Math.floor(rng() * COLS);
+        const row = Math.floor(rng() * ROWS);
         const key = `${col},${row}`;
         if (used.has(key)) continue;
         if (terrain && terrain[key] === "water") continue;
@@ -1042,7 +1044,7 @@ export class MapScene extends Phaser.Scene {
 
   // Generate random spawn positions for each enemy, avoiding hero spawn,
   // pickups, and any provided terrain overrides (so enemies don't spawn on water).
-  static generateRandomEnemySpawns(terrain?: Record<string, Terrain>): Array<{ col: number; row: number }> {
+  static generateRandomEnemySpawns(terrain?: Record<string, Terrain>, rng: () => number = Math.random): Array<{ col: number; row: number }> {
     const used = new Set<string>();
     used.add("0,0");
     // Keep at least 3 hops away from hero spawn so the player has breathing room
@@ -1059,8 +1061,8 @@ export class MapScene extends Phaser.Scene {
       let attempts = 0;
       while (attempts < 200) {
         attempts++;
-        const col = Math.floor(Math.random() * COLS);
-        const row = Math.floor(Math.random() * ROWS);
+        const col = Math.floor(rng() * COLS);
+        const row = Math.floor(rng() * ROWS);
         const key = `${col},${row}`;
         if (used.has(key)) continue;
         if (terrain && terrain[key] === "water") continue;

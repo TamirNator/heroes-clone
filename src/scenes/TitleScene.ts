@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { MapScene } from "./MapScene";
+import { mulberry32, seedFromString, todayDateString } from "../rng";
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -73,10 +74,30 @@ export class TitleScene extends Phaser.Scene {
       this.scene.start("MapScene", {});
     });
     buttonY += 70;
+    this.makeButton(640, buttonY, "Daily", "#cc88ff", () => this.startDailyChallenge());
+    buttonY += 70;
     this.makeButton(640, buttonY, "About", "#888888", () => this.showAbout());
 
     // Difficulty toggle below About
     this.addDifficultyToggle(buttonY + 80);
+  }
+
+  private startDailyChallenge(): void {
+    this.clearAllProgress();
+    const today = todayDateString();
+    const seed = seedFromString(`heroes-clone:${today}`);
+    const rng = mulberry32(seed);
+    const terrain = MapScene.generateRandomTerrain(rng);
+    const enemySpawns = MapScene.generateRandomEnemySpawns(terrain, rng);
+    const pickups = MapScene.generateRandomPickups(terrain, enemySpawns, rng);
+    const towns = MapScene.generateRandomTowns(terrain, enemySpawns, pickups, rng);
+    this.game.registry.set("randomTerrain", terrain);
+    this.game.registry.set("randomEnemySpawns", enemySpawns);
+    this.game.registry.set("randomPotions", pickups.potions);
+    this.game.registry.set("randomScrolls", pickups.scrolls);
+    this.game.registry.set("randomTowns", towns);
+    this.game.registry.set("dailySeed", today);
+    this.scene.start("MapScene", {});
   }
 
   private addDifficultyToggle(y: number): void {

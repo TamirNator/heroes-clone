@@ -21,6 +21,13 @@ Stack: TypeScript + Phaser 3 + Vite. PM/orchestrator: Claude Code (this terminal
 
 ---
 
+## S25.1 — Seeded RNG + Daily Challenge (v1.11)
+**PM (direct):** New `src/rng.ts` — `mulberry32(seed)` PRNG + `seedFromString(s)` FNV-1a hash + `todayDateString()` returns YYYY-MM-DD. Threaded an optional `rng?` parameter through all four `MapScene.generateRandom*` statics (terrain, enemySpawns, pickups, towns). New TitleScene button "Daily" seeds with today's date and starts a reproducible map — same player will get same map on the same day; same date = same map for every player.
+**Verification:** new e2e `s25-1-daily-seed.spec.ts` clicks Daily twice (same day) and asserts both `randomTerrain` and `randomEnemySpawns` are byte-identical. All 58 tests pass.
+**Status:** ✅ shipped — closes v1.11 (seeded RNG infrastructure + first use).
+
+---
+
 ## S25.0 — Hall of Fame in About modal
 **PM (direct):** On full-clear (GAME WON), record the hero's level to `localStorage["heroes-clone:bestLevel"]` (only if it beats the previous best). About modal in TitleScene shows "Hall of Fame — Best level on full clear: N" plus the existing total-kills counter. If no full clear yet, shows "No full clears yet — defeat all 6 enemies!". Persists across runs and resets.
 **Status:** ✅ shipped (PM direct). All 57 tests pass.
